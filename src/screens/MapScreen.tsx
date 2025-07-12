@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Alert, TouchableOpacity, Text, Modal } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Text,
+  Modal,
+} from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +18,10 @@ const MapScreen = () => {
   const [spots, setSpots] = useState<EnduroSpot[]>([]);
   const [mapRef, setMapRef] = useState<MapView | null>(null);
   const [showAddSpot, setShowAddSpot] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{latitude: number; longitude: number} | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   useEffect(() => {
     getLocationPermission();
@@ -86,18 +96,18 @@ const MapScreen = () => {
     }
   };
 
-  const handleAddSpot = (newSpot: Omit<EnduroSpot, 'id'>) => {
+  const handleAddSpot = (newSpot: Omit<EnduroSpot, "id">) => {
     const spotWithId: EnduroSpot = {
       ...newSpot,
       id: Date.now().toString(), // Temporary ID generation
     };
-    
-    setSpots(prevSpots => [...prevSpots, spotWithId]);
+
+    setSpots((prevSpots) => [...prevSpots, spotWithId]);
     setShowAddSpot(false);
     setSelectedLocation(null);
-    
+
     // TODO: Save to database
-    console.log('New spot added:', spotWithId);
+    console.log("New spot added:", spotWithId);
   };
 
   const handleMapPress = (event: any) => {
@@ -143,6 +153,7 @@ const MapScreen = () => {
         }}
         showsUserLocation
         showsMyLocationButton={false}
+        onLongPress={handleMapPress}
       >
         {/* Markery dla miejsc enduro */}
         {spots.map((spot) => (
@@ -168,15 +179,38 @@ const MapScreen = () => {
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
-          // TODO: Navigate to AddSpot screen
-          Alert.alert(
-            "Info",
-            "Funkcja dodawania miejsca będzie wkrótce dostępna!"
-          );
+          if (location) {
+            setSelectedLocation({
+              latitude: location.latitude,
+              longitude: location.longitude,
+            });
+            setShowAddSpot(true);
+          } else {
+            Alert.alert("Błąd", "Nie można określić lokalizacji");
+          }
         }}
       >
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>
+
+      {/* Modal dodawania miejsca */}
+      <Modal
+        visible={showAddSpot}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        {selectedLocation && (
+          <AddSpotScreen
+            latitude={selectedLocation.latitude}
+            longitude={selectedLocation.longitude}
+            onAddSpot={handleAddSpot}
+            onCancel={() => {
+              setShowAddSpot(false);
+              setSelectedLocation(null);
+            }}
+          />
+        )}
+      </Modal>
     </View>
   );
 };
