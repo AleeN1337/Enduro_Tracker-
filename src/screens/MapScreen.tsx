@@ -12,6 +12,7 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { EnduroSpot, UserLocation } from "../types";
 import AddSpotScreen from "./AddSpotScreen";
+import { addSpot, getAllSpots } from "./SpotsListScreen";
 
 const MapScreen = () => {
   const [location, setLocation] = useState<UserLocation | null>(null);
@@ -51,38 +52,47 @@ const MapScreen = () => {
   };
 
   const loadSpots = () => {
-    // Przykładowe dane - później będą pobierane z bazy danych
-    const sampleSpots: EnduroSpot[] = [
-      {
-        id: "1",
-        name: "Kamienny Podjazd",
-        description: "Trudny podjazd z dużymi kamieniami",
-        latitude: 50.0647,
-        longitude: 19.945,
-        difficulty: "hard",
-        category: "climb",
-        rating: 4.5,
-        images: [],
-        createdBy: "user1",
-        createdAt: new Date(),
-        tags: ["kamienie", "stromy"],
-      },
-      {
-        id: "2",
-        name: "Błotna Sekcja",
-        description: "Głębokie błoto po deszczu",
-        latitude: 50.07,
-        longitude: 19.95,
-        difficulty: "moderate",
-        category: "mud",
-        rating: 3.8,
-        images: [],
-        createdBy: "user2",
-        createdAt: new Date(),
-        tags: ["błoto", "mokro"],
-      },
-    ];
-    setSpots(sampleSpots);
+    // Pobierz wszystkie miejsca z globalnego storage
+    const allSpots = getAllSpots();
+
+    // Dodaj przykładowe dane jeśli storage jest pusty
+    if (allSpots.length === 0) {
+      const sampleSpots: EnduroSpot[] = [
+        {
+          id: "sample-1",
+          name: "Kamienny Podjazd",
+          description: "Trudny podjazd z dużymi kamieniami",
+          latitude: 50.0647,
+          longitude: 19.945,
+          difficulty: "hard",
+          category: "climb",
+          rating: 4.5,
+          images: [],
+          createdBy: "sample-user",
+          createdAt: new Date(),
+          tags: ["kamienie", "stromy"],
+        },
+        {
+          id: "sample-2",
+          name: "Błotna Sekcja",
+          description: "Głębokie błoto po deszczu",
+          latitude: 50.07,
+          longitude: 19.95,
+          difficulty: "moderate",
+          category: "mud",
+          rating: 3.8,
+          images: [],
+          createdBy: "sample-user",
+          createdAt: new Date(),
+          tags: ["błoto", "mokro"],
+        },
+      ];
+
+      // Dodaj przykładowe dane do storage
+      sampleSpots.forEach((spot) => addSpot(spot));
+    }
+
+    setSpots(getAllSpots());
   };
 
   const centerOnUser = () => {
@@ -102,11 +112,15 @@ const MapScreen = () => {
       id: Date.now().toString(), // Temporary ID generation
     };
 
-    setSpots((prevSpots) => [...prevSpots, spotWithId]);
+    // Dodaj do globalnego storage
+    addSpot(spotWithId);
+
+    // Odśwież lokalną listę
+    setSpots(getAllSpots());
+
     setShowAddSpot(false);
     setSelectedLocation(null);
 
-    // TODO: Save to database
     console.log("New spot added:", spotWithId);
   };
 
@@ -218,6 +232,7 @@ const MapScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#1a1a1a",
   },
   map: {
     flex: 1,
@@ -226,38 +241,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#1a1a1a",
   },
   centerButton: {
     position: "absolute",
-    top: 60,
+    top: 70,
     right: 20,
-    backgroundColor: "white",
-    borderRadius: 25,
-    padding: 10,
-    elevation: 5,
+    backgroundColor: "#2a2a2a",
+    borderRadius: 16,
+    padding: 14,
+    elevation: 8,
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#444",
   },
   addButton: {
     position: "absolute",
-    bottom: 30,
+    bottom: 40,
     right: 20,
     backgroundColor: "#FF6B35",
-    borderRadius: 30,
-    padding: 15,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
+    borderRadius: 20,
+    padding: 18,
+    elevation: 12,
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    borderWidth: 2,
+    borderColor: "#FF8E53",
   },
 });
 

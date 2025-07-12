@@ -268,15 +268,20 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#1a1a1a",
   },
   header: {
-    backgroundColor: "white",
+    backgroundColor: "#2a2a2a",
     alignItems: "center",
-    paddingVertical: 30,
+    paddingVertical: 40,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+    borderBottomColor: "#444",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   avatarContainer: {
     position: "relative",

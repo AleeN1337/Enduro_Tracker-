@@ -49,7 +49,7 @@ const AppNavigator = () => {
         <Tab.Screen
           name="SpotsTab"
           component={SpotsListScreen}
-          options={{ title: "Miejscówki" }}
+          options={{ title: "Moje Miejscówki" }}
         />
         <Tab.Screen
           name="TrackingTab"

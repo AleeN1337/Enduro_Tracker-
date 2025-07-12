@@ -9,8 +9,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { EnduroSpot } from "../types";
 
 interface AddSpotScreenProps {
@@ -34,6 +36,7 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
   const [category, setCategory] = useState<
     "climb" | "technical" | "jump" | "creek" | "rocks" | "mud"
   >("climb");
+  const [images, setImages] = useState<string[]>([]);
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -56,7 +59,7 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
       createdBy: "current-user", // TODO: Pobierz z kontekstu użytkownika
       createdAt: new Date(),
       rating: 0,
-      images: [],
+      images: images,
       tags: [],
     };
 
@@ -98,6 +101,58 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
     }
   };
 
+  const pickImage = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert("Błąd", "Potrzebujemy dostępu do galerii zdjęć");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setImages((prev) => [...prev, result.assets[0].uri]);
+    }
+  };
+
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert("Błąd", "Potrzebujemy dostępu do aparatu");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setImages((prev) => [...prev, result.assets[0].uri]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const showImagePicker = () => {
+    Alert.alert("Dodaj zdjęcie", "Wybierz źródło zdjęcia", [
+      { text: "Anuluj", style: "cancel" },
+      { text: "Galeria", onPress: pickImage },
+      { text: "Aparat", onPress: takePhoto },
+    ]);
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -106,7 +161,7 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
       <ScrollView style={styles.scrollContainer}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
-            <Ionicons name="close" size={24} color="#333" />
+            <Ionicons name="close" size={24} color="#ccc" />
           </TouchableOpacity>
           <Text style={styles.title}>Dodaj nowe miejsce</Text>
           <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
@@ -116,9 +171,8 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
 
         <View style={styles.form}>
           <View style={styles.locationInfo}>
-            <Ionicons name="location" size={20} color="#FF6B35" />
             <Text style={styles.locationText}>
-              Lokalizacja: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+              📍 Lokalizacja: {latitude.toFixed(6)}, {longitude.toFixed(6)}
             </Text>
           </View>
 
@@ -129,6 +183,7 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
               value={name}
               onChangeText={setName}
               placeholder="np. Kamienny Podjazd"
+              placeholderTextColor="#888"
               maxLength={50}
             />
           </View>
@@ -140,6 +195,7 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
               value={description}
               onChangeText={setDescription}
               placeholder="Opisz miejsce, trudności, zalecenia..."
+              placeholderTextColor="#888"
               multiline
               numberOfLines={4}
               maxLength={300}
@@ -220,6 +276,45 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
               ))}
             </View>
           </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Zdjęcia (opcjonalne)</Text>
+
+            {images.length > 0 && (
+              <ScrollView
+                horizontal
+                style={styles.imagesPreview}
+                showsHorizontalScrollIndicator={false}
+              >
+                {images.map((imageUri, index) => (
+                  <View key={index} style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={styles.previewImage}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => removeImage(index)}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              style={styles.addImageButton}
+              onPress={showImagePicker}
+            >
+              <Ionicons name="camera" size={24} color="#FF6B35" />
+              <Text style={styles.addImageText}>
+                {images.length === 0
+                  ? "Dodaj zdjęcie"
+                  : "Dodaj kolejne zdjęcie"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -229,7 +324,7 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#1a1a1a", // Ciemne tło
   },
   scrollContainer: {
     flex: 1,
@@ -238,62 +333,93 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
+    borderBottomColor: "#333",
+    backgroundColor: "#2a2a2a",
   },
   cancelButton: {
-    padding: 8,
+    backgroundColor: "#3a3a3a",
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#555",
+  },
+  cancelText: {
+    color: "#ccc",
+    fontWeight: "600",
+    fontSize: 16,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+    letterSpacing: 0.3,
   },
   saveButton: {
     backgroundColor: "#FF6B35",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 16,
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   saveText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 16,
+    letterSpacing: 0.3,
   },
   form: {
-    padding: 16,
+    padding: 20,
   },
   locationInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
+    backgroundColor: "#2a2a2a",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#444",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   locationText: {
-    marginLeft: 8,
-    color: "#666",
-    fontSize: 14,
+    color: "#ccc",
+    fontSize: 15,
+    textAlign: "center",
+    fontWeight: "500",
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   label: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 12,
+    letterSpacing: 0.3,
   },
   input: {
+    backgroundColor: "#2a2a2a",
     borderWidth: 1,
-    borderColor: "#DDD",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: "#444",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: "#FAFAFA",
+    color: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   textArea: {
     height: 100,
@@ -301,54 +427,120 @@ const styles = StyleSheet.create({
   },
   difficultyContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 12,
   },
   difficultyButton: {
     flex: 1,
-    borderWidth: 2,
-    borderRadius: 8,
-    paddingVertical: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#444",
+    borderRadius: 12,
     alignItems: "center",
-    marginHorizontal: 4,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#2a2a2a",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   selectedDifficulty: {
-    backgroundColor: "#F0F8FF",
+    backgroundColor: "#FF6B35",
+    borderColor: "#FF6B35",
+    shadowColor: "#FF6B35",
+    shadowOpacity: 0.3,
   },
   difficultyText: {
-    fontSize: 14,
+    color: "#ccc",
     fontWeight: "600",
-    color: "#666",
+    fontSize: 15,
   },
   categoryContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    gap: 12,
   },
   categoryButton: {
-    width: "48%",
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#DDD",
-    borderRadius: 8,
     paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    backgroundColor: "#FAFAFA",
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#444",
+    borderRadius: 20,
+    alignItems: "center",
+    minWidth: 110,
+    backgroundColor: "#2a2a2a",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   selectedCategory: {
+    backgroundColor: "#FF6B35",
     borderColor: "#FF6B35",
-    backgroundColor: "#FFF3F0",
+    shadowColor: "#FF6B35",
+    shadowOpacity: 0.3,
   },
   categoryText: {
-    marginLeft: 8,
+    color: "#ccc",
+    fontWeight: "600",
     fontSize: 14,
-    color: "#666",
   },
   selectedCategoryText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  // Image styles
+  imagesPreview: {
+    marginTop: 12,
+  },
+  imageContainer: {
+    marginTop: 12,
+    position: "relative",
+  },
+  previewImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: "#2a2a2a",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    backgroundColor: "#FF4444",
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#FF4444",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  addImageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FF6B35",
+    borderStyle: "dashed",
+    borderRadius: 12,
+    paddingVertical: 20,
+    backgroundColor: "#2a2a2a",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addImageText: {
+    marginLeft: 8,
     color: "#FF6B35",
     fontWeight: "600",
+    fontSize: 16,
   },
 });
 
