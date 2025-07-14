@@ -5,7 +5,7 @@ export interface EnduroSpot {
   latitude: number;
   longitude: number;
   difficulty: "easy" | "moderate" | "hard" | "extreme";
-  category: "climb" | "technical" | "jump" | "creek" | "rocks" | "mud";
+  categories: ("climb" | "technical" | "jump" | "creek" | "rocks" | "mud")[];
   rating: number;
   images: string[];
   createdBy: string;

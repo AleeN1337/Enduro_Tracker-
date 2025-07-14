@@ -33,9 +33,9 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
   const [difficulty, setDifficulty] = useState<
     "easy" | "moderate" | "hard" | "extreme"
   >("moderate");
-  const [category, setCategory] = useState<
-    "climb" | "technical" | "jump" | "creek" | "rocks" | "mud"
-  >("climb");
+  const [categories, setCategories] = useState<
+    ("climb" | "technical" | "jump" | "creek" | "rocks" | "mud")[]
+  >([]);
   const [images, setImages] = useState<string[]>([]);
 
   const handleSave = () => {
@@ -49,13 +49,18 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
       return;
     }
 
+    if (categories.length === 0) {
+      Alert.alert("Błąd", "Wybierz przynajmniej jedną kategorię");
+      return;
+    }
+
     const newSpot: Omit<EnduroSpot, "id"> = {
       name: name.trim(),
       description: description.trim(),
       latitude,
       longitude,
       difficulty,
-      category,
+      categories,
       createdBy: "current-user", // TODO: Pobierz z kontekstu użytkownika
       createdAt: new Date(),
       rating: 0,
@@ -139,6 +144,20 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
     if (!result.canceled && result.assets[0]) {
       setImages((prev) => [...prev, result.assets[0].uri]);
     }
+  };
+
+  const toggleCategory = (
+    categoryKey: "climb" | "technical" | "jump" | "creek" | "rocks" | "mud"
+  ) => {
+    setCategories((prev) => {
+      if (prev.includes(categoryKey)) {
+        // Usuń kategorię jeśli już jest zaznaczona
+        return prev.filter((cat) => cat !== categoryKey);
+      } else {
+        // Dodaj kategorię jeśli nie jest zaznaczona
+        return [...prev, categoryKey];
+      }
+    });
   };
 
   const removeImage = (index: number) => {
@@ -239,7 +258,8 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Kategoria</Text>
+            <Text style={styles.label}>Kategorie *</Text>
+            <Text style={styles.helperText}>Możesz wybrać wiele kategorii</Text>
             <View style={styles.categoryContainer}>
               {(
                 [
@@ -255,19 +275,20 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
                   key={cat.key}
                   style={[
                     styles.categoryButton,
-                    category === cat.key && styles.selectedCategory,
+                    categories.includes(cat.key) && styles.selectedCategory,
                   ]}
-                  onPress={() => setCategory(cat.key)}
+                  onPress={() => toggleCategory(cat.key)}
                 >
                   <Ionicons
                     name={getCategoryIcon(cat.key)}
                     size={20}
-                    color={category === cat.key ? "#FF6B35" : "#666"}
+                    color={categories.includes(cat.key) ? "#FF6B35" : "#666"}
                   />
                   <Text
                     style={[
                       styles.categoryText,
-                      category === cat.key && styles.selectedCategoryText,
+                      categories.includes(cat.key) &&
+                        styles.selectedCategoryText,
                     ]}
                   >
                     {cat.label}
@@ -405,6 +426,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginBottom: 12,
     letterSpacing: 0.3,
+  },
+  helperText: {
+    fontSize: 14,
+    color: "#888",
+    marginBottom: 12,
+    fontStyle: "italic",
   },
   input: {
     backgroundColor: "#2a2a2a",

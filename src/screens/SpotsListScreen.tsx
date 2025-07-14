@@ -11,7 +11,9 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { EnduroSpot } from "../types";
+import * as Location from "expo-location";
+import { EnduroSpot, UserLocation } from "../types";
+import { useNavigation as useNavigationContext } from "../contexts/NavigationContext";
 
 // Mock storage - w prawdziwej aplikacji to będzie AsyncStorage lub SQLite
 let globalSpots: EnduroSpot[] = [];
@@ -33,13 +35,62 @@ const SpotsListScreen = () => {
   const [filter, setFilter] = useState<"all" | EnduroSpot["difficulty"]>("all");
   const [selectedSpot, setSelectedSpot] = useState<EnduroSpot | null>(null);
   const [showSpotDetail, setShowSpotDetail] = useState(false);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const navigationContext = useNavigationContext();
 
   useEffect(() => {
     loadSpots();
+    getUserLocation();
     // Refresh spots every 2 seconds to sync with new additions
     const interval = setInterval(loadSpots, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  const getUserLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+          altitude: currentLocation.coords.altitude || undefined,
+          accuracy: currentLocation.coords.accuracy || undefined,
+          timestamp: currentLocation.timestamp,
+        });
+      }
+    } catch (error) {
+      console.error("Error getting location:", error);
+    }
+  };
+
+  const openNavigation = (spot: EnduroSpot) => {
+    if (!userLocation) {
+      Alert.alert("Błąd", "Nie można ustalić twojej lokalizacji");
+      return;
+    }
+
+    // Pokaż opcje nawigacji
+    Alert.alert("Wybierz typ nawigacji", `Nawiguj do: ${spot.name}`, [
+      { text: "Anuluj", style: "cancel" },
+      {
+        text: "🗺️ Trasa na mapie",
+        onPress: () => {
+          navigationContext.setNavigationTarget(spot);
+          navigationContext.setShouldShowNavigation(true);
+          navigationContext.setNavigationMode("map");
+        },
+      },
+      {
+        text: "🧭 Nawigacja GPS",
+        onPress: () => {
+          navigationContext.setNavigationTarget(spot);
+          navigationContext.setIsGPSNavigating(true);
+          navigationContext.setNavigationMode("gps");
+        },
+      },
+    ]);
+  };
 
   const loadSpots = () => {
     // Filtruj tylko miejsca utworzone przez aktualnego użytkownika
@@ -106,7 +157,9 @@ const SpotsListScreen = () => {
     }
   };
 
-  const getCategoryIcon = (category: EnduroSpot["category"]) => {
+  const getCategoryIcon = (
+    category: "climb" | "technical" | "jump" | "creek" | "rocks" | "mud"
+  ) => {
     switch (category) {
       case "climb":
         return "trending-up";
@@ -133,7 +186,7 @@ const SpotsListScreen = () => {
       <View style={styles.spotHeader}>
         <View style={styles.spotTitleRow}>
           <Ionicons
-            name={getCategoryIcon(item.category)}
+            name={getCategoryIcon(item.categories[0] || "climb")}
             size={20}
             color="#FF6B35"
           />
@@ -289,7 +342,9 @@ const SpotsListScreen = () => {
               <View style={styles.spotDetailHeader}>
                 <View style={styles.spotTitleRow}>
                   <Ionicons
-                    name={getCategoryIcon(selectedSpot.category)}
+                    name={getCategoryIcon(
+                      selectedSpot.categories[0] || "climb"
+                    )}
                     size={24}
                     color="#FF6B35"
                   />
@@ -331,11 +386,49 @@ const SpotsListScreen = () => {
               </View>
 
               <View style={styles.detailRow}>
+                <Ionicons name="list" size={20} color="#666" />
+                <Text style={styles.categoriesText}>
+                  Kategorie:{" "}
+                  {selectedSpot.categories
+                    .map((cat) => {
+                      switch (cat) {
+                        case "climb":
+                          return "Podjazd";
+                        case "technical":
+                          return "Techniczny";
+                        case "jump":
+                          return "Skok";
+                        case "creek":
+                          return "Potok";
+                        case "rocks":
+                          return "Kamienie";
+                        case "mud":
+                          return "Błoto";
+                        default:
+                          return cat;
+                      }
+                    })
+                    .join(", ")}
+                </Text>
+              </View>
+
+              <View style={styles.detailRow}>
                 <Ionicons name="calendar" size={20} color="#666" />
                 <Text style={styles.dateText}>
                   Dodano: {selectedSpot.createdAt.toLocaleDateString()}
                 </Text>
               </View>
+
+              {/* Navigation Button */}
+              <TouchableOpacity
+                style={styles.navigationButton}
+                onPress={() => openNavigation(selectedSpot)}
+              >
+                <Ionicons name="navigate" size={24} color="white" />
+                <Text style={styles.navigationButtonText}>
+                  🧭 Nawiguj do miejsca
+                </Text>
+              </TouchableOpacity>
 
               {selectedSpot.images && selectedSpot.images.length > 0 && (
                 <View style={styles.imagesSection}>
@@ -634,6 +727,12 @@ const styles = StyleSheet.create({
     color: "#ccc",
     fontWeight: "500",
   },
+  categoriesText: {
+    marginLeft: 12,
+    fontSize: 15,
+    color: "#ccc",
+    fontWeight: "500",
+  },
   imagesSection: {
     marginTop: 24,
     backgroundColor: "#2a2a2a",
@@ -665,6 +764,30 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#333",
+  },
+  navigationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF6B35",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    marginVertical: 20,
+    shadowColor: "#FF6B35",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: "#FF8E53",
+  },
+  navigationButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 8,
+    letterSpacing: 0.3,
   },
   // Empty state styles
   emptyContainer: {

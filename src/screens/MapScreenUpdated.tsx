@@ -12,10 +12,8 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { EnduroSpot, UserLocation } from "../types";
 import AddSpotScreen from "./AddSpotScreen";
-import OpenStreetMap from "../components/OpenStreetMap";
-import GPSNavigation from "../components/GPSNavigation";
+import SeznamMap from "../components/SeznamMap";
 import { addSpot, getAllSpots } from "./SpotsListScreen";
-import { useNavigation as useNavigationContext } from "../contexts/NavigationContext";
 
 const MapScreen = () => {
   const [location, setLocation] = useState<UserLocation | null>(null);
@@ -26,33 +24,12 @@ const MapScreen = () => {
     latitude: number;
     longitude: number;
   } | null>(null);
-  const [mapProvider, setMapProvider] = useState<"google" | "osm">("osm"); // Default to OpenStreetMap
-  const navigationContext = useNavigationContext();
+  const [useSeznamMap, setUseSeznamMap] = useState(true);
 
   useEffect(() => {
     getLocationPermission();
     loadSpots();
   }, []);
-
-  // Reaguj na zmiany w kontekście nawigacji
-  useEffect(() => {
-    if (
-      navigationContext.shouldShowNavigation &&
-      navigationContext.navigationTarget
-    ) {
-      // Przełącz na OpenStreetMap
-      setMapProvider("osm");
-
-      // Wyzeruj flagi nawigacji
-      setTimeout(() => {
-        navigationContext.setShouldShowNavigation(false);
-        navigationContext.setNavigationTarget(null);
-      }, 1000);
-    }
-  }, [
-    navigationContext.shouldShowNavigation,
-    navigationContext.navigationTarget,
-  ]);
 
   const getLocationPermission = async () => {
     try {
@@ -81,7 +58,7 @@ const MapScreen = () => {
   };
 
   const centerOnUser = () => {
-    if (location && mapRef && mapProvider === "google") {
+    if (location && mapRef && !useSeznamMap) {
       mapRef.animateToRegion({
         latitude: location.latitude,
         longitude: location.longitude,
@@ -120,95 +97,16 @@ const MapScreen = () => {
     setShowAddSpot(true);
   };
 
-  const openNavigation = (spot: EnduroSpot) => {
-    if (!location) {
-      Alert.alert("Błąd", "Nie można ustalić twojej lokalizacji");
-      return;
-    }
-
-    // Pokaż opcje nawigacji
-    Alert.alert("Wybierz typ nawigacji", `Nawiguj do: ${spot.name}`, [
-      { text: "Anuluj", style: "cancel" },
-      {
-        text: "🗺️ Trasa na mapie",
-        onPress: () => {
-          // Przełącz na OpenStreetMap jeśli używamy Google Maps
-          if (mapProvider === "google") {
-            setMapProvider("osm");
-          }
-          navigationContext.setNavigationTarget(spot);
-          navigationContext.setShouldShowNavigation(true);
-          navigationContext.setNavigationMode("map");
-        },
-      },
-      {
-        text: "🧭 Nawigacja GPS",
-        onPress: () => {
-          navigationContext.setNavigationTarget(spot);
-          navigationContext.setIsGPSNavigating(true);
-          navigationContext.setNavigationMode("gps");
-        },
-      },
-    ]);
-  };
-
   const handleSpotPress = (spot: EnduroSpot) => {
-    const categoriesText = spot.categories
-      .map((cat) => {
-        switch (cat) {
-          case "climb":
-            return "Podjazd";
-          case "technical":
-            return "Techniczny";
-          case "jump":
-            return "Skok";
-          case "creek":
-            return "Potok";
-          case "rocks":
-            return "Kamienie";
-          case "mud":
-            return "Błoto";
-          default:
-            return cat;
-        }
-      })
-      .join(", ");
-
     Alert.alert(
       spot.name,
-      `Trudność: ${spot.difficulty}\\nKategorie: ${categoriesText}\\n\\n${spot.description}`,
-      [
-        { text: "Zamknij", style: "cancel" },
-        {
-          text: "🧭 Nawiguj",
-          onPress: () => openNavigation(spot),
-          style: "default",
-        },
-      ]
+      `Trudność: ${spot.difficulty}\\nKategoria: ${spot.category}\\n\\n${spot.description}`,
+      [{ text: "OK" }]
     );
   };
 
   const toggleMapProvider = () => {
-    console.log("Current map provider:", mapProvider);
-    if (mapProvider === "google") {
-      console.log("Switching to OpenStreetMap");
-      setMapProvider("osm");
-    } else {
-      console.log("Switching to Google Maps");
-      setMapProvider("google");
-    }
-  };
-
-  const getMapProviderLabel = () => {
-    console.log("Current map provider label:", mapProvider);
-    switch (mapProvider) {
-      case "google":
-        return "Google Maps";
-      case "osm":
-        return "OpenStreetMap";
-      default:
-        return "Mapy";
-    }
+    setUseSeznamMap(!useSeznamMap);
   };
 
   const getDifficultyColor = (difficulty: EnduroSpot["difficulty"]) => {
@@ -234,8 +132,6 @@ const MapScreen = () => {
     );
   }
 
-  console.log("MapScreen rendering with mapProvider:", mapProvider);
-
   return (
     <View style={styles.container}>
       {/* Map Provider Toggle Button */}
@@ -243,38 +139,17 @@ const MapScreen = () => {
         style={styles.mapToggleButton}
         onPress={toggleMapProvider}
       >
-        <Text style={styles.mapToggleText}>{getMapProviderLabel()}</Text>
+        <Text style={styles.mapToggleText}>
+          {useSeznamMap ? "Google Maps" : "Seznam.cz"}
+        </Text>
       </TouchableOpacity>
 
-      {mapProvider === "osm" ? (
-        <OpenStreetMap
+      {useSeznamMap ? (
+        <SeznamMap
           location={location}
           spots={spots}
           onMapPress={handleSeznamMapPress}
           onMarkerPress={handleSpotPress}
-          autoNavigateToSpot={
-            navigationContext.shouldShowNavigation
-              ? navigationContext.navigationTarget
-              : null
-          }
-          onNavigateToSpot={(destination) => {
-            // Nawigacja odbywa się już na mapie OpenStreetMap - nie robimy nic więcej
-            console.log("Nawigacja do:", destination.name);
-          }}
-          onStartGPSNavigation={(destination) => {
-            // Znajdź spot na podstawie nazwy i koordynatów
-            const spot = spots.find(
-              (s) =>
-                s.name === destination.name &&
-                Math.abs(s.latitude - destination.latitude) < 0.0001 &&
-                Math.abs(s.longitude - destination.longitude) < 0.0001
-            );
-            if (spot) {
-              navigationContext.setNavigationTarget(spot);
-              navigationContext.setIsGPSNavigating(true);
-              navigationContext.setNavigationMode("gps");
-            }
-          }}
         />
       ) : (
         <MapView
@@ -306,7 +181,7 @@ const MapScreen = () => {
         </MapView>
       )}
 
-      {mapProvider === "google" && (
+      {!useSeznamMap && (
         <TouchableOpacity style={styles.centerButton} onPress={centerOnUser}>
           <Ionicons name="locate" size={24} color="#FF6B35" />
         </TouchableOpacity>
@@ -340,25 +215,6 @@ const MapScreen = () => {
             onCancel={() => {
               setShowAddSpot(false);
               setSelectedLocation(null);
-            }}
-          />
-        )}
-      </Modal>
-
-      {/* GPS Navigation Modal */}
-      <Modal
-        visible={navigationContext.isGPSNavigating}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
-        {navigationContext.navigationTarget && (
-          <GPSNavigation
-            destination={navigationContext.navigationTarget}
-            currentLocation={location}
-            onClose={() => {
-              navigationContext.setIsGPSNavigating(false);
-              navigationContext.setNavigationTarget(null);
-              navigationContext.setNavigationMode("map");
             }}
           />
         )}
@@ -413,25 +269,25 @@ const styles = StyleSheet.create({
   },
   mapToggleButton: {
     position: "absolute",
-    top: 60, // zwiększone z 20 na 60
+    top: 20,
     left: 20,
     backgroundColor: "#2a2a2a",
     borderRadius: 12,
-    paddingVertical: 10, // zwiększone z 8 na 10
-    paddingHorizontal: 16, // zwiększone z 12 na 16
-    zIndex: 9999, // zwiększone z 1000 na 9999
-    elevation: 15, // zwiększone z 8 na 15
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    zIndex: 1000,
+    elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5, // zwiększone z 0.3 na 0.5
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    borderWidth: 2, // zwiększone z 1 na 2
-    borderColor: "#FF6B35", // zmienione z #444 na #FF6B35
+    borderWidth: 1,
+    borderColor: "#444",
   },
   mapToggleText: {
-    color: "#FFFFFF", // zmienione z #FF6B35 na białe
-    fontWeight: "700", // zwiększone z 600 na 700
-    fontSize: 14, // zwiększone z 12 na 14
+    color: "#FF6B35",
+    fontWeight: "600",
+    fontSize: 12,
   },
 });
 
