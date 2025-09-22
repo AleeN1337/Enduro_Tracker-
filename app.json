@@ -38,8 +38,15 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-sqlite"
-    ]
+    "plugins": ["expo-sqlite"],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "cli": {
+      "appVersionSource": "local"
+    },
+    "developmentClient": {
+      "silentLaunch": false
+    }
   }
 }

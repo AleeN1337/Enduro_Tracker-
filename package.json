@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "start": "expo start --port 19000",
-    "start:tunnel": "expo start --port 19000 --tunnel",
+    "start": "expo start --port 19001",
+    "start:tunnel": "expo start --port 19001 --tunnel",
+    "start:clear": "expo start --port 19001 --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web --port 19003"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.4.2",

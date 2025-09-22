@@ -12,7 +12,7 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { EnduroSpot, UserLocation } from "../types";
 import AddSpotScreen from "./AddSpotScreen";
-import OpenStreetMap from "../components/OpenStreetMap";
+import OpenStreetMapSimple from "../components/OpenStreetMapSimple";
 import GPSNavigation from "../components/GPSNavigation";
 import { addSpot, getAllSpots } from "./SpotsListScreen";
 import { useNavigation as useNavigationContext } from "../contexts/NavigationContext";
@@ -247,33 +247,18 @@ const MapScreen = () => {
       </TouchableOpacity>
 
       {mapProvider === "osm" ? (
-        <OpenStreetMap
+        <OpenStreetMapSimple
           location={location}
           spots={spots}
           onMapPress={handleSeznamMapPress}
           onMarkerPress={handleSpotPress}
-          autoNavigateToSpot={
-            navigationContext.shouldShowNavigation
-              ? navigationContext.navigationTarget
-              : null
-          }
-          onNavigateToSpot={(destination) => {
+          onNavigateToSpot={(destination: {
+            latitude: number;
+            longitude: number;
+            name: string;
+          }) => {
             // Nawigacja odbywa się już na mapie OpenStreetMap - nie robimy nic więcej
             console.log("Nawigacja do:", destination.name);
-          }}
-          onStartGPSNavigation={(destination) => {
-            // Znajdź spot na podstawie nazwy i koordynatów
-            const spot = spots.find(
-              (s) =>
-                s.name === destination.name &&
-                Math.abs(s.latitude - destination.latitude) < 0.0001 &&
-                Math.abs(s.longitude - destination.longitude) < 0.0001
-            );
-            if (spot) {
-              navigationContext.setNavigationTarget(spot);
-              navigationContext.setIsGPSNavigating(true);
-              navigationContext.setNavigationMode("gps");
-            }
           }}
         />
       ) : (
