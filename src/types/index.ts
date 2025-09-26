@@ -1,3 +1,15 @@
+export interface Comment {
+  id: string;
+  spotId: string;
+  userId: string;
+  username: string;
+  content: string;
+  rating?: number; // opcjonalna ocena 1-5
+  createdAt: Date;
+  likes: number;
+  likedBy: string[]; // IDs użytkowników którzy polubili
+}
+
 export interface EnduroSpot {
   id: string;
   name: string;
@@ -11,6 +23,7 @@ export interface EnduroSpot {
   createdBy: string;
   createdAt: Date;
   tags: string[];
+  comments: Comment[]; // dodajemy komentarze do spotu
 }
 
 export interface UserLocation {
@@ -47,6 +60,7 @@ export type RootStackParamList = {
   Map: undefined;
   AddSpot: { location?: UserLocation };
   SpotDetails: { spotId: string };
+  SpotsList: undefined;
   Profile: undefined;
   Tracking: undefined;
 };

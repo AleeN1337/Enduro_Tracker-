@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  Modal,
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import { useNavigation } from "@react-navigation/native";
 import { EnduroSpot, UserLocation } from "../types";
 import { useNavigation as useNavigationContext } from "../contexts/NavigationContext";
 
@@ -26,17 +26,19 @@ export const removeSpot = (spotId: string) => {
   globalSpots = globalSpots.filter((spot) => spot.id !== spotId);
 };
 
-export const getAllSpots = () => {
-  return [...globalSpots];
+export const updateSpot = (updatedSpot: EnduroSpot) => {
+  const index = globalSpots.findIndex(spot => spot.id === updatedSpot.id);
+  if (index !== -1) {
+    globalSpots[index] = updatedSpot;
+  }
 };
 
 const SpotsListScreen = () => {
   const [spots, setSpots] = useState<EnduroSpot[]>([]);
   const [filter, setFilter] = useState<"all" | EnduroSpot["difficulty"]>("all");
-  const [selectedSpot, setSelectedSpot] = useState<EnduroSpot | null>(null);
-  const [showSpotDetail, setShowSpotDetail] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const navigationContext = useNavigationContext();
+  const navigation = useNavigation();
 
   useEffect(() => {
     loadSpots();
@@ -119,8 +121,11 @@ const SpotsListScreen = () => {
   };
 
   const handleSpotPress = (spot: EnduroSpot) => {
-    setSelectedSpot(spot);
-    setShowSpotDetail(true);
+    (navigation as any).navigate("SpotDetails", { spotId: spot.id });
+  };
+
+  const handleCommentsPress = (spot: EnduroSpot) => {
+    (navigation as any).navigate("SpotDetails", { spotId: spot.id });
   };
 
   const filteredSpots = spots.filter(
@@ -197,6 +202,13 @@ const SpotsListScreen = () => {
             <Ionicons name="star" size={16} color="#FFD700" />
             <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
           </View>
+          <TouchableOpacity
+            style={styles.commentsButton}
+            onPress={() => handleCommentsPress(item)}
+          >
+            <Ionicons name="chatbubble" size={16} color="#3498db" />
+            <Text style={styles.commentsCount}>{item.comments?.length || 0}</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={() => handleDeleteSpot(item)}
@@ -319,148 +331,6 @@ const SpotsListScreen = () => {
         />
       )}
 
-      {/* Modal szczegółów miejsca */}
-      <Modal
-        visible={showSpotDetail}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        {selectedSpot && (
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity
-                onPress={() => setShowSpotDetail(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Szczegóły miejsca</Text>
-              <View style={styles.headerSpacer} />
-            </View>
-
-            <ScrollView style={styles.modalContent}>
-              <View style={styles.spotDetailHeader}>
-                <View style={styles.spotTitleRow}>
-                  <Ionicons
-                    name={getCategoryIcon(
-                      selectedSpot.categories[0] || "climb"
-                    )}
-                    size={24}
-                    color="#FF6B35"
-                  />
-                  <Text style={styles.modalSpotName}>{selectedSpot.name}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.difficultyBadge,
-                    {
-                      backgroundColor: getDifficultyColor(
-                        selectedSpot.difficulty
-                      ),
-                    },
-                  ]}
-                >
-                  <Text style={styles.difficultyText}>
-                    {getDifficultyText(selectedSpot.difficulty)}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.modalDescription}>
-                {selectedSpot.description}
-              </Text>
-
-              <View style={styles.detailRow}>
-                <Ionicons name="location" size={20} color="#666" />
-                <Text style={styles.coordinatesText}>
-                  {selectedSpot.latitude.toFixed(6)},{" "}
-                  {selectedSpot.longitude.toFixed(6)}
-                </Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Ionicons name="star" size={20} color="#FFD700" />
-                <Text style={styles.ratingText}>
-                  Ocena: {selectedSpot.rating.toFixed(1)}/5.0
-                </Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Ionicons name="list" size={20} color="#666" />
-                <Text style={styles.categoriesText}>
-                  Kategorie:{" "}
-                  {selectedSpot.categories
-                    .map((cat) => {
-                      switch (cat) {
-                        case "climb":
-                          return "Podjazd";
-                        case "technical":
-                          return "Techniczny";
-                        case "jump":
-                          return "Skok";
-                        case "creek":
-                          return "Potok";
-                        case "rocks":
-                          return "Kamienie";
-                        case "mud":
-                          return "Błoto";
-                        default:
-                          return cat;
-                      }
-                    })
-                    .join(", ")}
-                </Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Ionicons name="calendar" size={20} color="#666" />
-                <Text style={styles.dateText}>
-                  Dodano: {selectedSpot.createdAt.toLocaleDateString()}
-                </Text>
-              </View>
-
-              {/* Navigation Button */}
-              <TouchableOpacity
-                style={styles.navigationButton}
-                onPress={() => openNavigation(selectedSpot)}
-              >
-                <Ionicons name="navigate" size={24} color="white" />
-                <Text style={styles.navigationButtonText}>
-                  🧭 Nawiguj do miejsca
-                </Text>
-              </TouchableOpacity>
-
-              {selectedSpot.images && selectedSpot.images.length > 0 && (
-                <View style={styles.imagesSection}>
-                  <Text style={styles.sectionTitle}>Zdjęcia</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {selectedSpot.images.map((imageUri, index) => (
-                      <Image
-                        key={index}
-                        source={{ uri: imageUri }}
-                        style={styles.detailImage}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-
-              {selectedSpot.tags && selectedSpot.tags.length > 0 && (
-                <View style={styles.tagsSection}>
-                  <Text style={styles.sectionTitle}>Tagi</Text>
-                  <View style={styles.tagsContainer}>
-                    {selectedSpot.tags.map((tag, index) => (
-                      <View key={index} style={styles.tag}>
-                        <Text style={styles.tagText}>#{tag}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        )}
-      </Modal>
     </View>
   );
 };
@@ -573,6 +443,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  commentsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  commentsCount: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: "#3498db",
+    fontWeight: "600",
+  },
   imagesContainer: {
     marginVertical: 12,
   },
@@ -638,156 +523,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     letterSpacing: 0.5,
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#1a1a1a", // Ciemny modal
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    backgroundColor: "#2a2a2a",
-  },
-  closeButton: {
-    backgroundColor: "#3a3a3a",
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
-    letterSpacing: 0.3,
-  },
-  headerSpacer: {
-    width: 50,
-  },
-  modalContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  spotDetailHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    marginBottom: 20,
-  },
-  modalSpotName: {
-    fontSize: 28,
-    fontWeight: "800",
-    marginLeft: 16,
-    color: "#fff",
-    flex: 1,
-    letterSpacing: 0.5,
-  },
-  modalDescription: {
-    fontSize: 17,
-    color: "#bbb",
-    lineHeight: 26,
-    marginBottom: 24,
-    fontWeight: "400",
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    backgroundColor: "#2a2a2a",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  coordinatesText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: "#ccc",
-    fontWeight: "500",
-  },
-  ratingText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: "#ffd700",
-    fontWeight: "600",
-  },
-  dateText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: "#ccc",
-    fontWeight: "500",
-  },
-  categoriesText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: "#ccc",
-    fontWeight: "500",
-  },
-  imagesSection: {
-    marginTop: 24,
-    backgroundColor: "#2a2a2a",
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 16,
-    letterSpacing: 0.3,
-  },
-  detailImage: {
-    width: 140,
-    height: 100,
-    borderRadius: 12,
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: "#444",
-  },
-  tagsSection: {
-    marginTop: 24,
-    marginBottom: 32,
-    backgroundColor: "#2a2a2a",
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  navigationButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FF6B35",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    marginVertical: 20,
-    shadowColor: "#FF6B35",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: "#FF8E53",
-  },
-  navigationButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "700",
-    marginLeft: 8,
-    letterSpacing: 0.3,
   },
   // Empty state styles
   emptyContainer: {

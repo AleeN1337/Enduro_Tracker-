@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
 import MapScreen from "../screens/MapScreen";
-import SpotsListScreen from "../screens/SpotsListScreen";
+import SpotsStack from "./SpotsStack";
 import TrackingScreen from "../screens/TrackingScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import { BottomTabParamList } from "../types";
@@ -48,7 +48,7 @@ const AppNavigator = () => {
         />
         <Tab.Screen
           name="SpotsTab"
-          component={SpotsListScreen}
+          component={SpotsStack}
           options={{ title: "Moje Miejscówki" }}
         />
         <Tab.Screen
