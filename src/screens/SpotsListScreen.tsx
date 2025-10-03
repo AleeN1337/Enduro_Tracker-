@@ -27,7 +27,7 @@ export const removeSpot = (spotId: string) => {
 };
 
 export const updateSpot = (updatedSpot: EnduroSpot) => {
-  const index = globalSpots.findIndex(spot => spot.id === updatedSpot.id);
+  const index = globalSpots.findIndex((spot) => spot.id === updatedSpot.id);
   if (index !== -1) {
     globalSpots[index] = updatedSpot;
   }
@@ -207,7 +207,9 @@ const SpotsListScreen = () => {
             onPress={() => handleCommentsPress(item)}
           >
             <Ionicons name="chatbubble" size={16} color="#3498db" />
-            <Text style={styles.commentsCount}>{item.comments?.length || 0}</Text>
+            <Text style={styles.commentsCount}>
+              {item.comments?.length || 0}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
@@ -330,7 +332,6 @@ const SpotsListScreen = () => {
           showsVerticalScrollIndicator={false}
         />
       )}
-
     </View>
   );
 };

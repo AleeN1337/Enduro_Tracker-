@@ -38,7 +38,11 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     }
   };
 
-  const renderStars = (currentRating?: number, interactive = false, onRate?: (rating: number) => void) => {
+  const renderStars = (
+    currentRating?: number,
+    interactive = false,
+    onRate?: (rating: number) => void
+  ) => {
     return (
       <View style={styles.starsContainer}>
         {[1, 2, 3, 4, 5].map((star) => (
@@ -49,9 +53,13 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
             style={styles.starButton}
           >
             <Ionicons
-              name={currentRating && star <= currentRating ? "star" : "star-outline"}
+              name={
+                currentRating && star <= currentRating ? "star" : "star-outline"
+              }
               size={16}
-              color={currentRating && star <= currentRating ? "#FFD700" : "#ccc"}
+              color={
+                currentRating && star <= currentRating ? "#FFD700" : "#ccc"
+              }
             />
           </TouchableOpacity>
         ))}
@@ -113,7 +121,10 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
         </View>
       ) : (
         <FlatList
-          data={comments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
+          data={comments.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )}
           keyExtractor={(item) => item.id}
           renderItem={renderComment}
           showsVerticalScrollIndicator={false}

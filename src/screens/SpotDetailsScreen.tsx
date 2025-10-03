@@ -22,8 +22,8 @@ const SpotDetailsScreen: React.FC = () => {
   const navigation = useNavigation();
   const { spotId } = route.params;
 
-  const [spot, setSpot] = useState<EnduroSpot | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
 
   useEffect(() => {
     loadSpot();
@@ -240,8 +240,12 @@ const SpotDetailsScreen: React.FC = () => {
           <View style={styles.categoriesList}>
             {spot.categories.map((category, index) => (
               <View key={index} style={styles.categoryItem}>
-                <Text style={styles.categoryIcon}>{getCategoryIcon(category)}</Text>
-                <Text style={styles.categoryLabel}>{getCategoryLabel(category)}</Text>
+                <Text style={styles.categoryIcon}>
+                  {getCategoryIcon(category)}
+                </Text>
+                <Text style={styles.categoryLabel}>
+                  {getCategoryLabel(category)}
+                </Text>
               </View>
             ))}
           </View>
