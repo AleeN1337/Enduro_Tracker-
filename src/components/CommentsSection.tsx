@@ -83,15 +83,16 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
 
       <View style={styles.commentActions}>
         <TouchableOpacity
-          style={styles.likeButton}
+          style={[styles.likeButton, item.likes > 0 && styles.likeButtonLiked]}
           onPress={() => onLikeComment(item.id)}
         >
           <Ionicons
-            name="heart"
-            size={16}
-            color={item.likes > 0 ? "#e74c3c" : "#ccc"}
+            name={item.likes > 0 ? "heart" : "heart-outline"}
+            size={18}
+            color={item.likes > 0 ? "#e74c3c" : "#666"}
+            style={styles.likeIcon}
           />
-          <Text style={[styles.likeCount, item.likes > 0 && styles.liked]}>
+          <Text style={[styles.likeCount, item.likes > 0 && styles.likeCountLiked]}>
             {item.likes}
           </Text>
         </TouchableOpacity>
@@ -278,21 +279,45 @@ const styles = StyleSheet.create({
   },
   commentActions: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
   },
   likeButton: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 8,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
     backgroundColor: "#f8f9fa",
+    borderWidth: 1,
+    borderColor: "#e1e8ed",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    minWidth: 70,
+    justifyContent: "center",
+  },
+  likeButtonLiked: {
+    backgroundColor: "linear-gradient(135deg, #ffebee, #ffcdd2)",
+    borderColor: "#e57373",
+    shadowColor: "#e57373",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  likeIcon: {
+    marginRight: 6,
   },
   likeCount: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: "600",
     color: "#666",
-    marginLeft: 4,
   },
-  liked: {
+  likeCountLiked: {
     color: "#e74c3c",
   },
   modalOverlay: {
