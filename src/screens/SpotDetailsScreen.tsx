@@ -21,7 +21,11 @@ let MapView: any = null;
 let Marker: any = null;
 
 // Web-compatible map component
-const WebMap: React.FC<{ latitude: number; longitude: number; name: string }> = ({ latitude, longitude, name }) => (
+const WebMap: React.FC<{
+  latitude: number;
+  longitude: number;
+  name: string;
+}> = ({ latitude, longitude, name }) => (
   <View style={styles.webMapContainer}>
     <View style={styles.webMapPlaceholder}>
       <Ionicons name="map" size={48} color="#666" />
@@ -260,7 +264,7 @@ const SpotDetailsScreen: React.FC = () => {
     <ScrollView style={styles.container}>
       {/* Mini mapa */}
       <View style={styles.mapContainer}>
-        {Platform.OS === 'web' ? (
+        {Platform.OS === "web" ? (
           <WebMap
             latitude={spot.latitude}
             longitude={spot.longitude}

@@ -13,7 +13,7 @@ config.resolver = {
   alias: {
     ...config.resolver?.alias,
     // Przekieruj react-native-maps na pusty moduł dla web
-    'react-native-maps': false,
+    "react-native-maps": false,
   },
   blockList: [
     // Blokuj native moduły dla web build

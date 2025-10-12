@@ -46,7 +46,9 @@ const WebMapScreen: React.FC<{
           </Text>
         </View>
 
-        <Text style={styles.spotsTitle}>Dostępne miejscówki ({spots.length}):</Text>
+        <Text style={styles.spotsTitle}>
+          Dostępne miejscówki ({spots.length}):
+        </Text>
         <View style={styles.spotsList}>
           {spots.map((spot) => (
             <TouchableOpacity
@@ -294,7 +296,7 @@ const MapScreen = () => {
   return (
     <View style={styles.container}>
       {/* Map Provider Toggle Button - only show on native */}
-      {Platform.OS !== 'web' && (
+      {Platform.OS !== "web" && (
         <TouchableOpacity
           style={styles.mapToggleButton}
           onPress={toggleMapProvider}
@@ -303,7 +305,7 @@ const MapScreen = () => {
         </TouchableOpacity>
       )}
 
-      {Platform.OS === 'web' ? (
+      {Platform.OS === "web" ? (
         <WebMapScreen
           location={location}
           spots={spots}
@@ -354,13 +356,13 @@ const MapScreen = () => {
         </MapView>
       )}
 
-      {Platform.OS !== 'web' && mapProvider === "google" && (
+      {Platform.OS !== "web" && mapProvider === "google" && (
         <TouchableOpacity style={styles.centerButton} onPress={centerOnUser}>
           <Ionicons name="locate" size={24} color="#FF6B35" />
         </TouchableOpacity>
       )}
 
-      {Platform.OS !== 'web' && (
+      {Platform.OS !== "web" && (
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => {
@@ -377,7 +379,7 @@ const MapScreen = () => {
         </TouchableOpacity>
       )}
 
-      {Platform.OS !== 'web' && (
+      {Platform.OS !== "web" && (
         <Modal
           visible={showAddSpot}
           animationType="slide"
@@ -398,7 +400,7 @@ const MapScreen = () => {
       )}
 
       {/* GPS Navigation Modal - only on native */}
-      {Platform.OS !== 'web' && (
+      {Platform.OS !== "web" && (
         <Modal
           visible={navigationContext.isGPSNavigating}
           animationType="slide"
