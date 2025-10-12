@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   Text,
   Modal,
+  Platform,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { EnduroSpot, UserLocation } from "../types";
@@ -17,10 +17,65 @@ import GPSNavigation from "../components/GPSNavigation";
 import { addSpot, getAllSpots } from "./SpotsListScreen";
 import { useNavigation as useNavigationContext } from "../contexts/NavigationContext";
 
+// MapView components will be null on web due to metro config
+let MapView: any = null;
+let Marker: any = null;
+let PROVIDER_GOOGLE: any = null;
+
+// Web-compatible map component
+const WebMapScreen: React.FC<{
+  location: UserLocation;
+  spots: EnduroSpot[];
+  onSpotPress: (spot: EnduroSpot) => void;
+}> = ({ location, spots, onSpotPress }) => {
+  return (
+    <View style={styles.webMapContainer}>
+      <View style={styles.webMapHeader}>
+        <Ionicons name="map" size={32} color="#FF6B35" />
+        <Text style={styles.webMapTitle}>Mapa niedostępna w przeglądarce</Text>
+        <Text style={styles.webMapSubtitle}>
+          Użyj aplikacji mobilnej aby zobaczyć pełną mapę z nawigacją GPS
+        </Text>
+      </View>
+
+      <View style={styles.webMapContent}>
+        <View style={styles.locationInfo}>
+          <Text style={styles.locationLabel}>Twoja lokalizacja:</Text>
+          <Text style={styles.locationCoords}>
+            {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+          </Text>
+        </View>
+
+        <Text style={styles.spotsTitle}>Dostępne miejscówki ({spots.length}):</Text>
+        <View style={styles.spotsList}>
+          {spots.map((spot) => (
+            <TouchableOpacity
+              key={spot.id}
+              style={styles.spotItem}
+              onPress={() => onSpotPress(spot)}
+            >
+              <View style={styles.spotHeader}>
+                <Text style={styles.spotName}>{spot.name}</Text>
+                <Text style={styles.spotDifficulty}>{spot.difficulty}</Text>
+              </View>
+              <Text style={styles.spotCoords}>
+                {spot.latitude.toFixed(6)}, {spot.longitude.toFixed(6)}
+              </Text>
+              <Text style={styles.spotDescription} numberOfLines={2}>
+                {spot.description}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const MapScreen = () => {
   const [location, setLocation] = useState<UserLocation | null>(null);
   const [spots, setSpots] = useState<EnduroSpot[]>([]);
-  const [mapRef, setMapRef] = useState<MapView | null>(null);
+  const [mapRef, setMapRef] = useState<any>(null);
   const [showAddSpot, setShowAddSpot] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{
     latitude: number;
@@ -238,15 +293,23 @@ const MapScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Map Provider Toggle Button */}
-      <TouchableOpacity
-        style={styles.mapToggleButton}
-        onPress={toggleMapProvider}
-      >
-        <Text style={styles.mapToggleText}>{getMapProviderLabel()}</Text>
-      </TouchableOpacity>
+      {/* Map Provider Toggle Button - only show on native */}
+      {Platform.OS !== 'web' && (
+        <TouchableOpacity
+          style={styles.mapToggleButton}
+          onPress={toggleMapProvider}
+        >
+          <Text style={styles.mapToggleText}>{getMapProviderLabel()}</Text>
+        </TouchableOpacity>
+      )}
 
-      {mapProvider === "osm" ? (
+      {Platform.OS === 'web' ? (
+        <WebMapScreen
+          location={location}
+          spots={spots}
+          onSpotPress={handleSpotPress}
+        />
+      ) : mapProvider === "osm" ? (
         <OpenStreetMapSimple
           location={location}
           spots={spots}
@@ -291,63 +354,69 @@ const MapScreen = () => {
         </MapView>
       )}
 
-      {mapProvider === "google" && (
+      {Platform.OS !== 'web' && mapProvider === "google" && (
         <TouchableOpacity style={styles.centerButton} onPress={centerOnUser}>
           <Ionicons name="locate" size={24} color="#FF6B35" />
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => {
-          if (location) {
-            setSelectedLocation({
-              latitude: location.latitude,
-              longitude: location.longitude,
-            });
-            setShowAddSpot(true);
-          }
-        }}
-      >
-        <Ionicons name="add" size={28} color="white" />
-      </TouchableOpacity>
+      {Platform.OS !== 'web' && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => {
+            if (location) {
+              setSelectedLocation({
+                latitude: location.latitude,
+                longitude: location.longitude,
+              });
+              setShowAddSpot(true);
+            }
+          }}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </TouchableOpacity>
+      )}
 
-      <Modal
-        visible={showAddSpot}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        {selectedLocation && (
-          <AddSpotScreen
-            latitude={selectedLocation.latitude}
-            longitude={selectedLocation.longitude}
-            onAddSpot={handleAddSpot}
-            onCancel={() => {
-              setShowAddSpot(false);
-              setSelectedLocation(null);
-            }}
-          />
-        )}
-      </Modal>
+      {Platform.OS !== 'web' && (
+        <Modal
+          visible={showAddSpot}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          {selectedLocation && (
+            <AddSpotScreen
+              latitude={selectedLocation.latitude}
+              longitude={selectedLocation.longitude}
+              onAddSpot={handleAddSpot}
+              onCancel={() => {
+                setShowAddSpot(false);
+                setSelectedLocation(null);
+              }}
+            />
+          )}
+        </Modal>
+      )}
 
-      {/* GPS Navigation Modal */}
-      <Modal
-        visible={navigationContext.isGPSNavigating}
-        animationType="slide"
-        presentationStyle="fullScreen"
-      >
-        {navigationContext.navigationTarget && (
-          <GPSNavigation
-            destination={navigationContext.navigationTarget}
-            currentLocation={location}
-            onClose={() => {
-              navigationContext.setIsGPSNavigating(false);
-              navigationContext.setNavigationTarget(null);
-              navigationContext.setNavigationMode("map");
-            }}
-          />
-        )}
-      </Modal>
+      {/* GPS Navigation Modal - only on native */}
+      {Platform.OS !== 'web' && (
+        <Modal
+          visible={navigationContext.isGPSNavigating}
+          animationType="slide"
+          presentationStyle="fullScreen"
+        >
+          {navigationContext.navigationTarget && (
+            <GPSNavigation
+              destination={navigationContext.navigationTarget}
+              currentLocation={location}
+              onClose={() => {
+                navigationContext.setIsGPSNavigating(false);
+                navigationContext.setNavigationTarget(null);
+                navigationContext.setNavigationMode("map");
+              }}
+            />
+          )}
+        </Modal>
+      )}
     </View>
   );
 };
@@ -417,6 +486,99 @@ const styles = StyleSheet.create({
     color: "#FFFFFF", // zmienione z #FF6B35 na białe
     fontWeight: "700", // zwiększone z 600 na 700
     fontSize: 14, // zwiększone z 12 na 14
+  },
+  webMapContainer: {
+    flex: 1,
+    backgroundColor: "#1a1a1a",
+    padding: 20,
+  },
+  webMapHeader: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  webMapTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    marginTop: 10,
+    textAlign: "center",
+  },
+  webMapSubtitle: {
+    fontSize: 14,
+    color: "#ccc",
+    marginTop: 8,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  webMapContent: {
+    flex: 1,
+  },
+  locationInfo: {
+    backgroundColor: "#2a2a2a",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  locationLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FF6B35",
+    marginBottom: 8,
+  },
+  locationCoords: {
+    fontSize: 14,
+    color: "#ccc",
+    fontFamily: "monospace",
+  },
+  spotsTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 16,
+  },
+  spotsList: {
+    flex: 1,
+  },
+  spotItem: {
+    backgroundColor: "#2a2a2a",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  spotHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  spotName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+    flex: 1,
+  },
+  spotDifficulty: {
+    fontSize: 12,
+    color: "#FF6B35",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  spotCoords: {
+    fontSize: 12,
+    color: "#888",
+    fontFamily: "monospace",
+    marginBottom: 8,
+  },
+  spotDescription: {
+    fontSize: 14,
+    color: "#ccc",
+    lineHeight: 20,
   },
 });
 

@@ -30,6 +30,13 @@ export const getAllSpots = () => {
   return globalSpots;
 };
 
+export const updateSpot = (updatedSpot: EnduroSpot) => {
+  const index = globalSpots.findIndex((spot) => spot.id === updatedSpot.id);
+  if (index !== -1) {
+    globalSpots[index] = updatedSpot;
+  }
+};
+
 const SpotsListScreen = () => {
   const [spots, setSpots] = useState<EnduroSpot[]>([]);
   const [filter, setFilter] = useState<"all" | EnduroSpot["difficulty"]>("all");

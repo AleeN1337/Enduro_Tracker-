@@ -66,6 +66,9 @@ const AddSpotScreen: React.FC<AddSpotScreenProps> = ({
       rating: 0,
       images: images,
       tags: [],
+      comments: [],
+      likes: 0,
+      likedBy: [],
     };
 
     onAddSpot(newSpot);

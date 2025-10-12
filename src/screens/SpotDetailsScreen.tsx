@@ -8,13 +8,31 @@ import {
   Alert,
   Dimensions,
   Animated,
+  Platform,
 } from "react-native";
 import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, { Marker } from "react-native-maps";
 import { EnduroSpot, Comment, RootStackParamList } from "../types";
 import CommentsSection from "../components/CommentsSection";
 import { getAllSpots, updateSpot } from "./SpotsListScreen";
+
+// MapView components will be null on web due to metro config
+let MapView: any = null;
+let Marker: any = null;
+
+// Web-compatible map component
+const WebMap: React.FC<{ latitude: number; longitude: number; name: string }> = ({ latitude, longitude, name }) => (
+  <View style={styles.webMapContainer}>
+    <View style={styles.webMapPlaceholder}>
+      <Ionicons name="map" size={48} color="#666" />
+      <Text style={styles.webMapTitle}>Mapa niedostępna w przeglądarce</Text>
+      <Text style={styles.webMapCoords}>
+        {latitude.toFixed(6)}, {longitude.toFixed(6)}
+      </Text>
+      <Text style={styles.webMapLocation}>{name}</Text>
+    </View>
+  </View>
+);
 
 type SpotDetailsScreenRouteProp = RouteProp<RootStackParamList, "SpotDetails">;
 
@@ -242,25 +260,39 @@ const SpotDetailsScreen: React.FC = () => {
     <ScrollView style={styles.container}>
       {/* Mini mapa */}
       <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: spot.latitude,
-            longitude: spot.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          scrollEnabled={false}
-          zoomEnabled={false}
-        >
-          <Marker
-            coordinate={{
+        {Platform.OS === 'web' ? (
+          <WebMap
+            latitude={spot.latitude}
+            longitude={spot.longitude}
+            name={spot.name}
+          />
+        ) : MapView && Marker ? (
+          <MapView
+            style={styles.map}
+            initialRegion={{
               latitude: spot.latitude,
               longitude: spot.longitude,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
             }}
-            title={spot.name}
+            scrollEnabled={false}
+            zoomEnabled={false}
+          >
+            <Marker
+              coordinate={{
+                latitude: spot.latitude,
+                longitude: spot.longitude,
+              }}
+              title={spot.name}
+            />
+          </MapView>
+        ) : (
+          <WebMap
+            latitude={spot.latitude}
+            longitude={spot.longitude}
+            name={spot.name}
           />
-        </MapView>
+        )}
       </View>
 
       {/* Szczegóły spotu */}
@@ -325,7 +357,11 @@ const SpotDetailsScreen: React.FC = () => {
           </View>
           <Animated.View style={{ transform: [{ scale: likeAnimation }] }}>
             <TouchableOpacity
-              style={[styles.statItem, styles.likeButton, isLiked && styles.likedButton]}
+              style={[
+                styles.statItem,
+                styles.likeButton,
+                isLiked && styles.likedButton,
+              ]}
               onPress={handleLikeSpot}
             >
               <Ionicons
@@ -377,6 +413,38 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  webMapContainer: {
+    height: 200,
+    marginBottom: 16,
+  },
+  webMapPlaceholder: {
+    flex: 1,
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  webMapTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  webMapCoords: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 4,
+    fontFamily: "monospace",
+  },
+  webMapLocation: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+    fontWeight: "500",
   },
   detailsContainer: {
     backgroundColor: "#fff",
