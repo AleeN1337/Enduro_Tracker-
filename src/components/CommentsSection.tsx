@@ -92,7 +92,9 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
             color={item.likes > 0 ? "#e74c3c" : "#666"}
             style={styles.likeIcon}
           />
-          <Text style={[styles.likeCount, item.likes > 0 && styles.likeCountLiked]}>
+          <Text
+            style={[styles.likeCount, item.likes > 0 && styles.likeCountLiked]}
+          >
             {item.likes}
           </Text>
         </TouchableOpacity>

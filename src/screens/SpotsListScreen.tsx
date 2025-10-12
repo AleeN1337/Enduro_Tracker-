@@ -26,11 +26,8 @@ export const removeSpot = (spotId: string) => {
   globalSpots = globalSpots.filter((spot) => spot.id !== spotId);
 };
 
-export const updateSpot = (updatedSpot: EnduroSpot) => {
-  const index = globalSpots.findIndex((spot) => spot.id === updatedSpot.id);
-  if (index !== -1) {
-    globalSpots[index] = updatedSpot;
-  }
+export const getAllSpots = () => {
+  return globalSpots;
 };
 
 const SpotsListScreen = () => {

@@ -24,6 +24,8 @@ export interface EnduroSpot {
   createdAt: Date;
   tags: string[];
   comments: Comment[]; // dodajemy komentarze do spotu
+  likes?: number; // liczba polubień
+  likedBy?: string[]; // IDs użytkowników którzy polubili
 }
 
 export interface UserLocation {

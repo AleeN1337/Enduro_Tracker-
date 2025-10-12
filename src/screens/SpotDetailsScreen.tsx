@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  Animated,
 } from "react-native";
 import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,8 +23,11 @@ const SpotDetailsScreen: React.FC = () => {
   const navigation = useNavigation();
   const { spotId } = route.params;
 
+  const [spot, setSpot] = useState<EnduroSpot | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const likeAnimation = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     loadSpot();
@@ -32,9 +36,13 @@ const SpotDetailsScreen: React.FC = () => {
   const loadSpot = async () => {
     try {
       const spots = await getAllSpots();
-      const foundSpot = spots.find((s) => s.id === spotId);
+      const foundSpot = spots.find((s: EnduroSpot) => s.id === spotId);
       if (foundSpot) {
         setSpot(foundSpot);
+        // Initialize like state based on current user
+        const currentUserId = "current_user"; // TODO: replace with actual user ID
+        setIsLiked(foundSpot.likedBy?.includes(currentUserId) || false);
+        setLikesCount(foundSpot.likes || 0);
       } else {
         Alert.alert("Błąd", "Nie znaleziono miejsca");
         navigation.goBack();
@@ -103,6 +111,44 @@ const SpotDetailsScreen: React.FC = () => {
       // Update the spot in storage
       updateSpot(updatedSpot);
       setSpot(updatedSpot);
+    } catch (error) {
+      Alert.alert("Błąd", "Nie udało się zaktualizować polubienia");
+    }
+  };
+
+  const handleLikeSpot = async () => {
+    if (!spot) return;
+
+    // Animate the button
+    Animated.sequence([
+      Animated.timing(likeAnimation, {
+        toValue: 1.2,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(likeAnimation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const currentUserId = "current_user"; // TODO: replace with actual user ID
+    const userHasLiked = spot.likedBy?.includes(currentUserId) || false;
+
+    const updatedSpot = {
+      ...spot,
+      likes: userHasLiked ? (spot.likes || 0) - 1 : (spot.likes || 0) + 1,
+      likedBy: userHasLiked
+        ? spot.likedBy?.filter((id) => id !== currentUserId) || []
+        : [...(spot.likedBy || []), currentUserId],
+    };
+
+    try {
+      updateSpot(updatedSpot);
+      setSpot(updatedSpot);
+      setIsLiked(!userHasLiked);
+      setLikesCount(updatedSpot.likes);
     } catch (error) {
       Alert.alert("Błąd", "Nie udało się zaktualizować polubienia");
     }
@@ -277,6 +323,20 @@ const SpotDetailsScreen: React.FC = () => {
             <Text style={styles.statValue}>{spot.comments.length}</Text>
             <Text style={styles.statLabel}>Komentarze</Text>
           </View>
+          <Animated.View style={{ transform: [{ scale: likeAnimation }] }}>
+            <TouchableOpacity
+              style={[styles.statItem, styles.likeButton, isLiked && styles.likedButton]}
+              onPress={handleLikeSpot}
+            >
+              <Ionicons
+                name={isLiked ? "heart" : "heart-outline"}
+                size={20}
+                color={isLiked ? "#e74c3c" : "#666"}
+              />
+              <Text style={styles.statValue}>{likesCount}</Text>
+              <Text style={styles.statLabel}>Polubienia</Text>
+            </TouchableOpacity>
+          </Animated.View>
           <View style={styles.statItem}>
             <Ionicons name="person" size={20} color="#27ae60" />
             <Text style={styles.statValue}>{spot.createdBy}</Text>
@@ -411,6 +471,15 @@ const styles = StyleSheet.create({
   },
   statItem: {
     alignItems: "center",
+  },
+  likeButton: {
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "transparent",
+  },
+  likedButton: {
+    backgroundColor: "rgba(231, 76, 60, 0.1)",
   },
   statValue: {
     fontSize: 16,
