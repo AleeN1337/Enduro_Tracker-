@@ -123,55 +123,124 @@ const MapScreen = () => {
 
   const getLocationPermission = useCallback(async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Błąd", "Potrzebujemy dostępu do lokalizacji!");
-        return;
-      }
+      if (Platform.OS === "web") {
+        // Use browser geolocation API for web
+        if (!navigator.geolocation) {
+          Alert.alert(
+            "Błąd",
+            "Twoja przeglądarka nie obsługuje geolokalizacji!"
+          );
+          return;
+        }
 
-      // Start watching location with throttling for better performance
-      const locationSubscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 5000, // Update every 5 seconds minimum
-          distanceInterval: 10, // Update when moved 10 meters
-        },
-        (locationData) => {
-          // Throttle updates to prevent excessive re-renders
+        // Get initial location
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLocation({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              altitude: position.coords.altitude || undefined,
+              accuracy: position.coords.accuracy || undefined,
+              timestamp: position.timestamp,
+            });
+          },
+          (error) => {
+            console.error("Error getting web location:", error);
+            Alert.alert("Błąd", "Nie można pobrać lokalizacji z przeglądarki");
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000, // 5 minutes
+          }
+        );
+
+        // Watch position for updates
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            // Throttle updates to prevent excessive re-renders
+            if (locationUpdateTimeout.current) {
+              clearTimeout(locationUpdateTimeout.current);
+            }
+            locationUpdateTimeout.current = setTimeout(() => {
+              setLocation({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                altitude: position.coords.altitude || undefined,
+                accuracy: position.coords.accuracy || undefined,
+                timestamp: position.timestamp,
+              });
+            }, 1000); // Throttle to 1 second
+          },
+          (error) => {
+            console.error("Error watching web location:", error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000, // 5 minutes
+          }
+        );
+
+        // Return cleanup function
+        return () => {
+          navigator.geolocation.clearWatch(watchId);
           if (locationUpdateTimeout.current) {
             clearTimeout(locationUpdateTimeout.current);
           }
-          locationUpdateTimeout.current = setTimeout(() => {
-            setLocation({
-              latitude: locationData.coords.latitude,
-              longitude: locationData.coords.longitude,
-              altitude: locationData.coords.altitude || undefined,
-              accuracy: locationData.coords.accuracy || undefined,
-              timestamp: locationData.timestamp,
-            });
-          }, 1000); // Throttle to 1 second
+        };
+      } else {
+        // Use Expo Location API for native platforms
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Błąd", "Potrzebujemy dostępu do lokalizacji!");
+          return;
         }
-      );
 
-      // Get initial location
-      const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      setLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-        altitude: currentLocation.coords.altitude || undefined,
-        accuracy: currentLocation.coords.accuracy || undefined,
-        timestamp: currentLocation.timestamp,
-      });
+        // Start watching location with throttling for better performance
+        const locationSubscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            timeInterval: 5000, // Update every 5 seconds minimum
+            distanceInterval: 10, // Update when moved 10 meters
+          },
+          (locationData) => {
+            // Throttle updates to prevent excessive re-renders
+            if (locationUpdateTimeout.current) {
+              clearTimeout(locationUpdateTimeout.current);
+            }
+            locationUpdateTimeout.current = setTimeout(() => {
+              setLocation({
+                latitude: locationData.coords.latitude,
+                longitude: locationData.coords.longitude,
+                altitude: locationData.coords.altitude || undefined,
+                accuracy: locationData.coords.accuracy || undefined,
+                timestamp: locationData.timestamp,
+              });
+            }, 1000); // Throttle to 1 second
+          }
+        );
 
-      // Store subscription for cleanup
-      return () => {
-        locationSubscription.remove();
-        if (locationUpdateTimeout.current) {
-          clearTimeout(locationUpdateTimeout.current);
-        }
-      };
+        // Get initial location
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        setLocation({
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+          altitude: currentLocation.coords.altitude || undefined,
+          accuracy: currentLocation.coords.accuracy || undefined,
+          timestamp: currentLocation.timestamp,
+        });
+
+        // Store subscription for cleanup
+        return () => {
+          locationSubscription.remove();
+          if (locationUpdateTimeout.current) {
+            clearTimeout(locationUpdateTimeout.current);
+          }
+        };
+      }
     } catch (error) {
       console.error("Error getting location:", error);
       Alert.alert("Błąd", "Nie można pobrać lokalizacji");
