@@ -20,6 +20,7 @@ import { EnduroSpot, UserLocation } from "../types";
 import AddSpotScreen from "./AddSpotScreen";
 import OpenStreetMapSimple from "../components/OpenStreetMapSimple";
 import GPSNavigation from "../components/GPSNavigation";
+import WebLeafletMap from "../components/WebLeafletMap";
 import { addSpot, getAllSpots } from "./SpotsListScreen";
 import { useNavigation as useNavigationContext } from "../contexts/NavigationContext";
 
@@ -375,10 +376,11 @@ const MapScreen = () => {
       )}
 
       {Platform.OS === "web" ? (
-        <WebMapScreen
+        <WebLeafletMap
           location={location}
           spots={spots}
           onSpotPress={handleSpotPress}
+          onMapPress={handleSeznamMapPress}
         />
       ) : mapProvider === "osm" ? (
         <OpenStreetMapSimple
