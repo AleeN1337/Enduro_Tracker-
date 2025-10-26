@@ -423,14 +423,18 @@ const MapScreen = () => {
   }, [spots, getDifficultyColor]);
 
   if (!location) {
+    console.log("Location is null, showing loading screen");
     return (
       <View style={styles.loadingContainer}>
-        <Text>Ładowanie mapy...</Text>
+        <Text style={{ color: '#fff', fontSize: 16 }}>Ładowanie mapy...</Text>
+        <Text style={{ color: '#ccc', fontSize: 12, marginTop: 8 }}>Pobieranie lokalizacji...</Text>
       </View>
     );
   }
 
   console.log("MapScreen rendering with mapProvider:", mapProvider);
+  console.log("Location:", location);
+  console.log("Spots count:", spots.length);
 
   return (
     <View style={styles.container}>

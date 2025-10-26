@@ -1,9 +1,17 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform, Text } from "react-native";
 import { EnduroSpot, UserLocation } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 
-// Web-only map component using Leaflet
+// Declare Leaflet as global for CDN usage
+declare global {
+  interface Window {
+    L: any;
+    handleSpotPress?: (spotId: string) => void;
+  }
+}
+
+// Web-only map component using Leaflet from CDN
 const WebLeafletMap: React.FC<{
   location: UserLocation;
   spots: EnduroSpot[];
@@ -13,27 +21,91 @@ const WebLeafletMap: React.FC<{
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const [mapError, setMapError] = React.useState<string | null>(null);
+  const [isMapReady, setIsMapReady] = React.useState(false);
+  const [leafletLoaded, setLeafletLoaded] = React.useState(false);
 
+  // Load Leaflet from CDN
   useEffect(() => {
-    // Only initialize on web platform
-    if (Platform.OS !== "web" || !mapRef.current) return;
+    if (Platform.OS !== "web") return;
 
-    const initializeMap = async () => {
+    // Check if Leaflet is already loaded
+    if (window.L) {
+      setLeafletLoaded(true);
+      return;
+    }
+
+    console.log("Loading Leaflet from CDN...");
+
+    // Add Leaflet CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+    link.crossOrigin = '';
+    document.head.appendChild(link);
+
+    // Add Leaflet JS
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+    script.crossOrigin = '';
+    script.async = true;
+
+    script.onload = () => {
+      console.log("Leaflet loaded from CDN successfully");
+      setLeafletLoaded(true);
+    };
+
+    script.onerror = () => {
+      console.error("Failed to load Leaflet from CDN");
+      setMapError("Nie udało się załadować biblioteki map");
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup on unmount
+      document.head.removeChild(link);
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  // Initialize map when Leaflet is loaded
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    if (!leafletLoaded) return;
+    if (!mapRef.current) return;
+    if (!window.L) return;
+
+    console.log("Initializing Leaflet map with location:", location);
+
+    const initializeMap = () => {
       try {
-        // Dynamic imports for web-only libraries
-        const L = (await import("leaflet")).default;
+        const L = window.L;
 
+        // Check if map container exists
+        if (!mapRef.current) {
+          console.error("Map container not found");
+          setMapError("Kontener mapy nie został znaleziony");
+          return;
+        }
+
+        console.log("Creating map instance...");
         // Initialize the map
-        const map = L.map(mapRef.current!).setView(
+        const map = L.map(mapRef.current).setView(
           [location.latitude, location.longitude],
           13
         );
+        console.log("Map instance created");
 
         // Add OpenStreetMap tiles
+        console.log("Adding tile layer...");
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "© OpenStreetMap contributors",
           maxZoom: 19,
         }).addTo(map);
+        console.log("Tile layer added");
 
         // Add user location marker
         const userIcon = L.divIcon({
@@ -47,6 +119,7 @@ const WebLeafletMap: React.FC<{
           .addTo(map)
           .bindPopup("Twoja lokalizacja");
 
+        console.log(`Adding ${spots.length} spot markers...`);
         // Add spot markers
         const spotMarkers = spots.map((spot) => {
           const difficultyColor = getDifficultyColor(spot.difficulty);
@@ -82,6 +155,8 @@ const WebLeafletMap: React.FC<{
         // Store references
         leafletMapRef.current = map;
         markersRef.current = spotMarkers;
+        setIsMapReady(true);
+        console.log("Map initialization complete!");
 
         // Add click handler for map
         if (onMapPress) {
@@ -94,7 +169,7 @@ const WebLeafletMap: React.FC<{
         }
 
         // Add global function for popup buttons
-        (window as any).handleSpotPress = (spotId: string) => {
+        window.handleSpotPress = (spotId: string) => {
           const spot = spots.find((s) => s.id === spotId);
           if (spot) {
             onSpotPress(spot);
@@ -102,6 +177,7 @@ const WebLeafletMap: React.FC<{
         };
       } catch (error) {
         console.error("Failed to initialize web map:", error);
+        setMapError(`Błąd inicjalizacji mapy: ${error}`);
       }
     };
 
@@ -114,11 +190,11 @@ const WebLeafletMap: React.FC<{
         leafletMapRef.current = null;
       }
       markersRef.current = [];
-      if ((window as any).handleSpotPress) {
-        delete (window as any).handleSpotPress;
+      if (window.handleSpotPress) {
+        delete window.handleSpotPress;
       }
     };
-  }, [location, spots, onSpotPress, onMapPress]);
+  }, [leafletLoaded, location, spots, onSpotPress, onMapPress]);
 
   // Update markers when spots change
   useEffect(() => {
@@ -216,8 +292,28 @@ const WebLeafletMap: React.FC<{
     return null; // This component is web-only
   }
 
+  if (mapError) {
+    return (
+      <View style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ color: '#FF6B35', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+            Błąd ładowania mapy
+          </Text>
+          <Text style={{ color: '#fff', textAlign: 'center' }}>
+            {mapError}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      {!isMapReady && (
+        <View style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -50 }, { translateY: -50 }], zIndex: 2000 }}>
+          <Text style={{ color: '#FF6B35', fontSize: 16 }}>Ładowanie mapy...</Text>
+        </View>
+      )}
       <div
         ref={mapRef}
         style={{
