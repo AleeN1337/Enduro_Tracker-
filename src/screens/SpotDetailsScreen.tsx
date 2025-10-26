@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   View,
   Text,
@@ -20,12 +26,12 @@ import { getAllSpots, updateSpot } from "./SpotsListScreen";
 let MapView: any = null;
 let Marker: any = null;
 
-// Web-compatible map component
+// Web-compatible map component - memoized for performance
 const WebMap: React.FC<{
   latitude: number;
   longitude: number;
   name: string;
-}> = ({ latitude, longitude, name }) => (
+}> = React.memo(({ latitude, longitude, name }) => (
   <View style={styles.webMapContainer}>
     <View style={styles.webMapPlaceholder}>
       <Ionicons name="map" size={48} color="#666" />
@@ -36,7 +42,7 @@ const WebMap: React.FC<{
       <Text style={styles.webMapLocation}>{name}</Text>
     </View>
   </View>
-);
+));
 
 type SpotDetailsScreenRouteProp = RouteProp<RootStackParamList, "SpotDetails">;
 
@@ -55,7 +61,7 @@ const SpotDetailsScreen: React.FC = () => {
     loadSpot();
   }, [spotId]);
 
-  const loadSpot = async () => {
+  const loadSpot = useCallback(async () => {
     try {
       const spots = await getAllSpots();
       const foundSpot = spots.find((s: EnduroSpot) => s.id === spotId);
@@ -75,70 +81,76 @@ const SpotDetailsScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [spotId, navigation]);
 
-  const handleAddComment = async (content: string, rating?: number) => {
-    if (!spot) return;
+  const handleAddComment = useCallback(
+    async (content: string, rating?: number) => {
+      if (!spot) return;
 
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      spotId: spot.id,
-      userId: "current_user", // TODO: replace with actual user ID
-      username: "Ty", // TODO: replace with actual username
-      content,
-      rating,
-      createdAt: new Date(),
-      likes: 0,
-      likedBy: [],
-    };
+      const newComment: Comment = {
+        id: Date.now().toString(),
+        spotId: spot.id,
+        userId: "current_user", // TODO: replace with actual user ID
+        username: "Ty", // TODO: replace with actual username
+        content,
+        rating,
+        createdAt: new Date(),
+        likes: 0,
+        likedBy: [],
+      };
 
-    const updatedSpot = {
-      ...spot,
-      comments: [...spot.comments, newComment],
-    };
+      const updatedSpot = {
+        ...spot,
+        comments: [...spot.comments, newComment],
+      };
 
-    try {
-      // Update the spot in storage
-      updateSpot(updatedSpot);
-      setSpot(updatedSpot);
-      Alert.alert("Sukces", "Komentarz został dodany!");
-    } catch (error) {
-      Alert.alert("Błąd", "Nie udało się dodać komentarza");
-    }
-  };
-
-  const handleLikeComment = async (commentId: string) => {
-    if (!spot) return;
-
-    const updatedComments = spot.comments.map((comment) => {
-      if (comment.id === commentId) {
-        const isLiked = comment.likedBy.includes("current_user"); // TODO: actual user ID
-        return {
-          ...comment,
-          likes: isLiked ? comment.likes - 1 : comment.likes + 1,
-          likedBy: isLiked
-            ? comment.likedBy.filter((id) => id !== "current_user")
-            : [...comment.likedBy, "current_user"],
-        };
+      try {
+        // Update the spot in storage
+        updateSpot(updatedSpot);
+        setSpot(updatedSpot);
+        Alert.alert("Sukces", "Komentarz został dodany!");
+      } catch (error) {
+        Alert.alert("Błąd", "Nie udało się dodać komentarza");
       }
-      return comment;
-    });
+    },
+    [spot]
+  );
 
-    const updatedSpot = {
-      ...spot,
-      comments: updatedComments,
-    };
+  const handleLikeComment = useCallback(
+    async (commentId: string) => {
+      if (!spot) return;
 
-    try {
-      // Update the spot in storage
-      updateSpot(updatedSpot);
-      setSpot(updatedSpot);
-    } catch (error) {
-      Alert.alert("Błąd", "Nie udało się zaktualizować polubienia");
-    }
-  };
+      const updatedComments = spot.comments.map((comment) => {
+        if (comment.id === commentId) {
+          const isLiked = comment.likedBy.includes("current_user"); // TODO: actual user ID
+          return {
+            ...comment,
+            likes: isLiked ? comment.likes - 1 : comment.likes + 1,
+            likedBy: isLiked
+              ? comment.likedBy.filter((id) => id !== "current_user")
+              : [...comment.likedBy, "current_user"],
+          };
+        }
+        return comment;
+      });
 
-  const handleLikeSpot = async () => {
+      const updatedSpot = {
+        ...spot,
+        comments: updatedComments,
+      };
+
+      try {
+        // Update the spot in storage
+        updateSpot(updatedSpot);
+        setSpot(updatedSpot);
+      } catch (error) {
+        Alert.alert("Błąd", "Nie udało się zaktualizować polubienia");
+      }
+    },
+    [spot]
+  );
+
+  const handleLikeSpot = useCallback(async () => {
     if (!spot) return;
 
     // Animate the button
@@ -174,9 +186,9 @@ const SpotDetailsScreen: React.FC = () => {
     } catch (error) {
       Alert.alert("Błąd", "Nie udało się zaktualizować polubienia");
     }
-  };
+  }, [spot, likeAnimation]);
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = useCallback((difficulty: string) => {
     switch (difficulty) {
       case "easy":
         return "#66bb6a";
@@ -189,9 +201,9 @@ const SpotDetailsScreen: React.FC = () => {
       default:
         return "#2196F3";
     }
-  };
+  }, []);
 
-  const getDifficultyLabel = (difficulty: string) => {
+  const getDifficultyLabel = useCallback((difficulty: string) => {
     switch (difficulty) {
       case "easy":
         return "Łatwy";
@@ -204,9 +216,9 @@ const SpotDetailsScreen: React.FC = () => {
       default:
         return "Nieznany";
     }
-  };
+  }, []);
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = useCallback((category: string) => {
     switch (category) {
       case "climb":
         return "↗";
@@ -223,9 +235,9 @@ const SpotDetailsScreen: React.FC = () => {
       default:
         return "📍";
     }
-  };
+  }, []);
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = useCallback((category: string) => {
     switch (category) {
       case "climb":
         return "Podjazd";
@@ -242,7 +254,7 @@ const SpotDetailsScreen: React.FC = () => {
       default:
         return "Inne";
     }
-  };
+  }, []);
 
   if (loading) {
     return (

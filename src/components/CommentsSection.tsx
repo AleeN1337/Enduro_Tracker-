@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -29,78 +29,100 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   const [rating, setRating] = useState<number | undefined>();
   const [showAddComment, setShowAddComment] = useState(false);
 
-  const handleAddComment = () => {
+  const handleAddComment = useCallback(() => {
     if (newComment.trim()) {
       onAddComment(newComment.trim(), rating);
       setNewComment("");
       setRating(undefined);
       setShowAddComment(false);
     }
-  };
+  }, [newComment, rating, onAddComment]);
 
-  const renderStars = (
-    currentRating?: number,
-    interactive = false,
-    onRate?: (rating: number) => void
-  ) => {
-    return (
-      <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
+  const renderStars = useCallback(
+    (
+      currentRating?: number,
+      interactive = false,
+      onRate?: (rating: number) => void
+    ) => {
+      return (
+        <View style={styles.starsContainer}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <TouchableOpacity
+              key={star}
+              disabled={!interactive}
+              onPress={() => interactive && onRate?.(star)}
+              style={styles.starButton}
+            >
+              <Ionicons
+                name={
+                  currentRating && star <= currentRating
+                    ? "star"
+                    : "star-outline"
+                }
+                size={16}
+                color={
+                  currentRating && star <= currentRating ? "#FFD700" : "#ccc"
+                }
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      );
+    },
+    []
+  );
+
+  const renderComment = useCallback(
+    ({ item }: { item: Comment }) => (
+      <View style={styles.commentContainer}>
+        <View style={styles.commentHeader}>
+          <View style={styles.userInfo}>
+            <Text style={styles.username}>{item.username}</Text>
+            <Text style={styles.timestamp}>
+              {new Date(item.createdAt).toLocaleDateString("pl-PL")}
+            </Text>
+          </View>
+          {item.rating && renderStars(item.rating)}
+        </View>
+
+        <Text style={styles.commentContent}>{item.content}</Text>
+
+        <View style={styles.commentActions}>
           <TouchableOpacity
-            key={star}
-            disabled={!interactive}
-            onPress={() => interactive && onRate?.(star)}
-            style={styles.starButton}
+            style={[
+              styles.likeButton,
+              item.likes > 0 && styles.likeButtonLiked,
+            ]}
+            onPress={() => onLikeComment(item.id)}
           >
             <Ionicons
-              name={
-                currentRating && star <= currentRating ? "star" : "star-outline"
-              }
-              size={16}
-              color={
-                currentRating && star <= currentRating ? "#FFD700" : "#ccc"
-              }
+              name={item.likes > 0 ? "heart" : "heart-outline"}
+              size={18}
+              color={item.likes > 0 ? "#e74c3c" : "#666"}
+              style={styles.likeIcon}
             />
+            <Text
+              style={[
+                styles.likeCount,
+                item.likes > 0 && styles.likeCountLiked,
+              ]}
+            >
+              {item.likes}
+            </Text>
           </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
-  const renderComment = ({ item }: { item: Comment }) => (
-    <View style={styles.commentContainer}>
-      <View style={styles.commentHeader}>
-        <View style={styles.userInfo}>
-          <Text style={styles.username}>{item.username}</Text>
-          <Text style={styles.timestamp}>
-            {new Date(item.createdAt).toLocaleDateString("pl-PL")}
-          </Text>
         </View>
-        {item.rating && renderStars(item.rating)}
       </View>
-
-      <Text style={styles.commentContent}>{item.content}</Text>
-
-      <View style={styles.commentActions}>
-        <TouchableOpacity
-          style={[styles.likeButton, item.likes > 0 && styles.likeButtonLiked]}
-          onPress={() => onLikeComment(item.id)}
-        >
-          <Ionicons
-            name={item.likes > 0 ? "heart" : "heart-outline"}
-            size={18}
-            color={item.likes > 0 ? "#e74c3c" : "#666"}
-            style={styles.likeIcon}
-          />
-          <Text
-            style={[styles.likeCount, item.likes > 0 && styles.likeCountLiked]}
-          >
-            {item.likes}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    ),
+    [renderStars, onLikeComment]
   );
+
+  // Memoize sorted comments to prevent unnecessary sorting on every render
+  const sortedComments = useMemo(() => {
+    return comments.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [comments]);
 
   return (
     <View style={styles.container}>
@@ -124,10 +146,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
         </View>
       ) : (
         <FlatList
-          data={comments.sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          )}
+          data={sortedComments}
           keyExtractor={(item) => item.id}
           renderItem={renderComment}
           showsVerticalScrollIndicator={false}

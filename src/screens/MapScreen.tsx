@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   View,
   StyleSheet,
@@ -22,12 +28,12 @@ let MapView: any = null;
 let Marker: any = null;
 let PROVIDER_GOOGLE: any = null;
 
-// Web-compatible map component
+// Web-compatible map component - memoized for performance
 const WebMapScreen: React.FC<{
   location: UserLocation;
   spots: EnduroSpot[];
   onSpotPress: (spot: EnduroSpot) => void;
-}> = ({ location, spots, onSpotPress }) => {
+}> = React.memo(({ location, spots, onSpotPress }) => {
   return (
     <View style={styles.webMapContainer}>
       <View style={styles.webMapHeader}>
@@ -72,7 +78,7 @@ const WebMapScreen: React.FC<{
       </View>
     </View>
   );
-};
+});
 
 const MapScreen = () => {
   const [location, setLocation] = useState<UserLocation | null>(null);
@@ -85,6 +91,9 @@ const MapScreen = () => {
   } | null>(null);
   const [mapProvider, setMapProvider] = useState<"google" | "osm">("osm"); // Default to OpenStreetMap
   const navigationContext = useNavigationContext();
+
+  // Throttle location updates for better performance
+  const locationUpdateTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     getLocationPermission();
@@ -111,7 +120,7 @@ const MapScreen = () => {
     navigationContext.navigationTarget,
   ]);
 
-  const getLocationPermission = async () => {
+  const getLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
@@ -119,7 +128,34 @@ const MapScreen = () => {
         return;
       }
 
-      const currentLocation = await Location.getCurrentPositionAsync({});
+      // Start watching location with throttling for better performance
+      const locationSubscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 5000, // Update every 5 seconds minimum
+          distanceInterval: 10, // Update when moved 10 meters
+        },
+        (locationData) => {
+          // Throttle updates to prevent excessive re-renders
+          if (locationUpdateTimeout.current) {
+            clearTimeout(locationUpdateTimeout.current);
+          }
+          locationUpdateTimeout.current = setTimeout(() => {
+            setLocation({
+              latitude: locationData.coords.latitude,
+              longitude: locationData.coords.longitude,
+              altitude: locationData.coords.altitude || undefined,
+              accuracy: locationData.coords.accuracy || undefined,
+              timestamp: locationData.timestamp,
+            });
+          }, 1000); // Throttle to 1 second
+        }
+      );
+
+      // Get initial location
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
       setLocation({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
@@ -127,17 +163,25 @@ const MapScreen = () => {
         accuracy: currentLocation.coords.accuracy || undefined,
         timestamp: currentLocation.timestamp,
       });
+
+      // Store subscription for cleanup
+      return () => {
+        locationSubscription.remove();
+        if (locationUpdateTimeout.current) {
+          clearTimeout(locationUpdateTimeout.current);
+        }
+      };
     } catch (error) {
       console.error("Error getting location:", error);
       Alert.alert("Błąd", "Nie można pobrać lokalizacji");
     }
-  };
+  }, []);
 
-  const loadSpots = () => {
+  const loadSpots = useCallback(() => {
     setSpots(getAllSpots());
-  };
+  }, []);
 
-  const centerOnUser = () => {
+  const centerOnUser = useCallback(() => {
     if (location && mapRef && mapProvider === "google") {
       mapRef.animateToRegion({
         latitude: location.latitude,
@@ -146,9 +190,9 @@ const MapScreen = () => {
         longitudeDelta: 0.01,
       });
     }
-  };
+  }, [location, mapProvider]);
 
-  const handleAddSpot = (newSpot: Omit<EnduroSpot, "id">) => {
+  const handleAddSpot = useCallback((newSpot: Omit<EnduroSpot, "id">) => {
     const spotWithId: EnduroSpot = {
       ...newSpot,
       id: Date.now().toString(),
@@ -161,91 +205,97 @@ const MapScreen = () => {
     setSelectedLocation(null);
 
     console.log("New spot added:", spotWithId);
-  };
+  }, []);
 
-  const handleMapPress = (event: any) => {
+  const handleMapPress = useCallback((event: any) => {
     const coordinate = event.nativeEvent.coordinate;
     setSelectedLocation(coordinate);
     setShowAddSpot(true);
-  };
+  }, []);
 
-  const handleSeznamMapPress = (coordinate: {
-    latitude: number;
-    longitude: number;
-  }) => {
-    setSelectedLocation(coordinate);
-    setShowAddSpot(true);
-  };
+  const handleSeznamMapPress = useCallback(
+    (coordinate: { latitude: number; longitude: number }) => {
+      setSelectedLocation(coordinate);
+      setShowAddSpot(true);
+    },
+    []
+  );
 
-  const openNavigation = (spot: EnduroSpot) => {
-    if (!location) {
-      Alert.alert("Błąd", "Nie można ustalić twojej lokalizacji");
-      return;
-    }
+  const openNavigation = useCallback(
+    (spot: EnduroSpot) => {
+      if (!location) {
+        Alert.alert("Błąd", "Nie można ustalić twojej lokalizacji");
+        return;
+      }
 
-    // Pokaż opcje nawigacji
-    Alert.alert("Wybierz typ nawigacji", `Nawiguj do: ${spot.name}`, [
-      { text: "Anuluj", style: "cancel" },
-      {
-        text: "🗺️ Trasa na mapie",
-        onPress: () => {
-          // Przełącz na OpenStreetMap jeśli używamy Google Maps
-          if (mapProvider === "google") {
-            setMapProvider("osm");
-          }
-          navigationContext.setNavigationTarget(spot);
-          navigationContext.setShouldShowNavigation(true);
-          navigationContext.setNavigationMode("map");
-        },
-      },
-      {
-        text: "🧭 Nawigacja GPS",
-        onPress: () => {
-          navigationContext.setNavigationTarget(spot);
-          navigationContext.setIsGPSNavigating(true);
-          navigationContext.setNavigationMode("gps");
-        },
-      },
-    ]);
-  };
-
-  const handleSpotPress = (spot: EnduroSpot) => {
-    const categoriesText = spot.categories
-      .map((cat) => {
-        switch (cat) {
-          case "climb":
-            return "Podjazd";
-          case "technical":
-            return "Techniczny";
-          case "jump":
-            return "Skok";
-          case "creek":
-            return "Potok";
-          case "rocks":
-            return "Kamienie";
-          case "mud":
-            return "Błoto";
-          default:
-            return cat;
-        }
-      })
-      .join(", ");
-
-    Alert.alert(
-      spot.name,
-      `Trudność: ${spot.difficulty}\\nKategorie: ${categoriesText}\\n\\n${spot.description}`,
-      [
-        { text: "Zamknij", style: "cancel" },
+      // Pokaż opcje nawigacji
+      Alert.alert("Wybierz typ nawigacji", `Nawiguj do: ${spot.name}`, [
+        { text: "Anuluj", style: "cancel" },
         {
-          text: "🧭 Nawiguj",
-          onPress: () => openNavigation(spot),
-          style: "default",
+          text: "🗺️ Trasa na mapie",
+          onPress: () => {
+            // Przełącz na OpenStreetMap jeśli używamy Google Maps
+            if (mapProvider === "google") {
+              setMapProvider("osm");
+            }
+            navigationContext.setNavigationTarget(spot);
+            navigationContext.setShouldShowNavigation(true);
+            navigationContext.setNavigationMode("map");
+          },
         },
-      ]
-    );
-  };
+        {
+          text: "🧭 Nawigacja GPS",
+          onPress: () => {
+            navigationContext.setNavigationTarget(spot);
+            navigationContext.setIsGPSNavigating(true);
+            navigationContext.setNavigationMode("gps");
+          },
+        },
+      ]);
+    },
+    [location, mapProvider, navigationContext]
+  );
 
-  const toggleMapProvider = () => {
+  const handleSpotPress = useCallback(
+    (spot: EnduroSpot) => {
+      const categoriesText = spot.categories
+        .map((cat) => {
+          switch (cat) {
+            case "climb":
+              return "Podjazd";
+            case "technical":
+              return "Techniczny";
+            case "jump":
+              return "Skok";
+            case "creek":
+              return "Potok";
+            case "rocks":
+              return "Kamienie";
+            case "mud":
+              return "Błoto";
+            default:
+              return cat;
+          }
+        })
+        .join(", ");
+
+      Alert.alert(
+        spot.name,
+        `Trudność: ${spot.difficulty}\\nKategorie: ${categoriesText}\\n\\n${spot.description}`,
+        [
+          { text: "Zamknij", style: "cancel" },
+          {
+            text: "🧭 Nawiguj",
+            onPress: () => openNavigation(spot),
+            style: "default",
+          },
+        ]
+      );
+    },
+    [openNavigation]
+  );
+
+  const toggleMapProvider = useCallback(() => {
     console.log("Current map provider:", mapProvider);
     if (mapProvider === "google") {
       console.log("Switching to OpenStreetMap");
@@ -254,9 +304,9 @@ const MapScreen = () => {
       console.log("Switching to Google Maps");
       setMapProvider("google");
     }
-  };
+  }, [mapProvider]);
 
-  const getMapProviderLabel = () => {
+  const getMapProviderLabel = useCallback(() => {
     console.log("Current map provider label:", mapProvider);
     switch (mapProvider) {
       case "google":
@@ -266,22 +316,41 @@ const MapScreen = () => {
       default:
         return "Mapy";
     }
-  };
+  }, [mapProvider]);
 
-  const getDifficultyColor = (difficulty: EnduroSpot["difficulty"]) => {
-    switch (difficulty) {
-      case "easy":
-        return "#4CAF50";
-      case "moderate":
-        return "#FF9800";
-      case "hard":
-        return "#F44336";
-      case "extreme":
-        return "#9C27B0";
-      default:
-        return "#2196F3";
-    }
-  };
+  const getDifficultyColor = useCallback(
+    (difficulty: EnduroSpot["difficulty"]) => {
+      switch (difficulty) {
+        case "easy":
+          return "#4CAF50";
+        case "moderate":
+          return "#FF9800";
+        case "hard":
+          return "#F44336";
+        case "extreme":
+          return "#9C27B0";
+        default:
+          return "#2196F3";
+      }
+    },
+    []
+  );
+
+  // Memoize markers to prevent unnecessary re-renders
+  const markers = useMemo(() => {
+    return spots.map((spot) => (
+      <Marker
+        key={spot.id}
+        coordinate={{
+          latitude: spot.latitude,
+          longitude: spot.longitude,
+        }}
+        title={spot.name}
+        description={spot.description}
+        pinColor={getDifficultyColor(spot.difficulty)}
+      />
+    ));
+  }, [spots, getDifficultyColor]);
 
   if (!location) {
     return (
@@ -341,18 +410,7 @@ const MapScreen = () => {
           showsMyLocationButton={false}
           onLongPress={handleMapPress}
         >
-          {spots.map((spot) => (
-            <Marker
-              key={spot.id}
-              coordinate={{
-                latitude: spot.latitude,
-                longitude: spot.longitude,
-              }}
-              title={spot.name}
-              description={spot.description}
-              pinColor={getDifficultyColor(spot.difficulty)}
-            />
-          ))}
+          {markers}
         </MapView>
       )}
 
