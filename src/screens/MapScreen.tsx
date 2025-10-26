@@ -426,8 +426,10 @@ const MapScreen = () => {
     console.log("Location is null, showing loading screen");
     return (
       <View style={styles.loadingContainer}>
-        <Text style={{ color: '#fff', fontSize: 16 }}>Ładowanie mapy...</Text>
-        <Text style={{ color: '#ccc', fontSize: 12, marginTop: 8 }}>Pobieranie lokalizacji...</Text>
+        <Text style={{ color: "#fff", fontSize: 16 }}>Ładowanie mapy...</Text>
+        <Text style={{ color: "#ccc", fontSize: 12, marginTop: 8 }}>
+          Pobieranie lokalizacji...
+        </Text>
       </View>
     );
   }

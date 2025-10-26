@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -9,42 +9,39 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { User } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 const ProfileScreen = () => {
-  const [user, setUser] = useState<User>({
-    id: "1",
-    username: "EnduroRider",
-    email: "rider@example.com",
-    avatar: undefined,
-    totalDistance: 2847.5,
-    ridesCount: 42,
-    favoriteSpots: ["1", "3"],
-  });
+  const { user, logout } = useAuth();
+
+  // Mockowe dane statystyk - później można przenieść do Firestore
+  const totalDistance = 2847.5;
+  const ridesCount = 42;
+  const favoriteSpots = 5;
 
   const stats = [
     {
       icon: "speedometer-outline",
       label: "Łączny dystans",
-      value: `${user.totalDistance.toFixed(1)} km`,
+      value: `${totalDistance.toFixed(1)} km`,
       color: "#4CAF50",
     },
     {
       icon: "bicycle-outline",
       label: "Liczba przejazdów",
-      value: user.ridesCount.toString(),
+      value: ridesCount.toString(),
       color: "#2196F3",
     },
     {
       icon: "heart-outline",
       label: "Ulubione miejsca",
-      value: user.favoriteSpots.length.toString(),
+      value: favoriteSpots.toString(),
       color: "#F44336",
     },
     {
       icon: "trophy-outline",
       label: "Poziom",
-      value: getUserLevel(user.totalDistance),
+      value: getUserLevel(totalDistance),
       color: "#FF9800",
     },
   ];
@@ -185,8 +182,8 @@ const ProfileScreen = () => {
       {/* Header z avatarem */}
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
-          {user.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.avatar} />
+          {user?.photoURL ? (
+            <Image source={{ uri: user.photoURL }} style={styles.avatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Ionicons name="person" size={40} color="#FF6B35" />
@@ -199,8 +196,8 @@ const ProfileScreen = () => {
             <Ionicons name="camera" size={16} color="white" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.username}>{user.username}</Text>
-        <Text style={styles.email}>{user.email}</Text>
+        <Text style={styles.username}>{user?.displayName || 'Użytkownik'}</Text>
+        <Text style={styles.email}>{user?.email || ''}</Text>
       </View>
 
       {/* Statystyki */}
@@ -253,7 +250,27 @@ const ProfileScreen = () => {
       <TouchableOpacity
         style={styles.logoutButton}
         onPress={() =>
-          Alert.alert("Wylogowanie", "Czy na pewno chcesz się wylogować?")
+          Alert.alert(
+            "Wylogowanie",
+            "Czy na pewno chcesz się wylogować?",
+            [
+              {
+                text: "Anuluj",
+                style: "cancel",
+              },
+              {
+                text: "Wyloguj",
+                style: "destructive",
+                onPress: async () => {
+                  try {
+                    await logout();
+                  } catch (error) {
+                    Alert.alert("Błąd", "Nie udało się wylogować");
+                  }
+                },
+              },
+            ]
+          )
         }
       >
         <Ionicons name="log-out-outline" size={20} color="#F44336" />
@@ -316,24 +333,26 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff",
     marginBottom: 5,
   },
   email: {
     fontSize: 16,
-    color: "#666",
+    color: "#ccc",
   },
   statsContainer: {
-    backgroundColor: "white",
+    backgroundColor: "#2a2a2a",
     margin: 15,
     padding: 20,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#444",
     elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff",
     marginBottom: 15,
   },
   statsGrid: {
@@ -357,19 +376,21 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff",
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 12,
-    color: "#666",
+    color: "#ccc",
     textAlign: "center",
   },
   achievementsContainer: {
-    backgroundColor: "white",
+    backgroundColor: "#2a2a2a",
     margin: 15,
     padding: 20,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#444",
     elevation: 3,
   },
   achievementItem: {
@@ -394,20 +415,22 @@ const styles = StyleSheet.create({
   achievementTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff",
     marginBottom: 2,
   },
   achievementTitleLocked: {
-    color: "#999",
+    color: "#888",
   },
   achievementDescription: {
     fontSize: 14,
-    color: "#666",
+    color: "#ccc",
   },
   menuContainer: {
-    backgroundColor: "white",
+    backgroundColor: "#2a2a2a",
     margin: 15,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#444",
     elevation: 3,
   },
   menuItem: {
@@ -432,21 +455,23 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#333",
+    color: "#fff",
     marginBottom: 2,
   },
   menuSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: "#ccc",
   },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "white",
+    backgroundColor: "#2a2a2a",
     margin: 15,
     padding: 15,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#444",
     elevation: 3,
   },
   logoutText: {

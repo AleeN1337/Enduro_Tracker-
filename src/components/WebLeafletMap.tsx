@@ -1,5 +1,11 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, TouchableOpacity, Platform, Text } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  Text,
+} from "react-native";
 import { EnduroSpot, UserLocation } from "../types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -38,18 +44,18 @@ const WebLeafletMap: React.FC<{
     console.log("Loading Leaflet from CDN...");
 
     // Add Leaflet CSS
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-    link.crossOrigin = '';
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+    link.crossOrigin = "";
     document.head.appendChild(link);
 
     // Add Leaflet JS
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-    script.crossOrigin = '';
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    script.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+    script.crossOrigin = "";
     script.async = true;
 
     script.onload = () => {
@@ -295,13 +301,25 @@ const WebLeafletMap: React.FC<{
   if (mapError) {
     return (
       <View style={styles.container}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <Text style={{ color: '#FF6B35', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <Text
+            style={{
+              color: "#FF6B35",
+              fontSize: 18,
+              fontWeight: "bold",
+              marginBottom: 10,
+            }}
+          >
             Błąd ładowania mapy
           </Text>
-          <Text style={{ color: '#fff', textAlign: 'center' }}>
-            {mapError}
-          </Text>
+          <Text style={{ color: "#fff", textAlign: "center" }}>{mapError}</Text>
         </View>
       </View>
     );
@@ -310,8 +328,18 @@ const WebLeafletMap: React.FC<{
   return (
     <View style={styles.container}>
       {!isMapReady && (
-        <View style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -50 }, { translateY: -50 }], zIndex: 2000 }}>
-          <Text style={{ color: '#FF6B35', fontSize: 16 }}>Ładowanie mapy...</Text>
+        <View
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: [{ translateX: -50 }, { translateY: -50 }],
+            zIndex: 2000,
+          }}
+        >
+          <Text style={{ color: "#FF6B35", fontSize: 16 }}>
+            Ładowanie mapy...
+          </Text>
         </View>
       )}
       <div

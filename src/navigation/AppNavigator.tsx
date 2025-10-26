@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,11 +7,31 @@ import MapScreen from "../screens/MapScreen";
 import SpotsStack from "./SpotsStack";
 import TrackingScreen from "../screens/TrackingScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import LoginScreen from "../screens/LoginScreen";
+import RegisterScreen from "../screens/RegisterScreen";
 import { BottomTabParamList } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 const AppNavigator = () => {
+  const { user } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
+
+  // Jeśli użytkownik nie jest zalogowany, pokaż ekrany auth
+  if (!user) {
+    return (
+      <NavigationContainer>
+        {showRegister ? (
+          <RegisterScreen onNavigateToLogin={() => setShowRegister(false)} />
+        ) : (
+          <LoginScreen onNavigateToRegister={() => setShowRegister(true)} />
+        )}
+      </NavigationContainer>
+    );
+  }
+
+  // Jeśli użytkownik jest zalogowany, pokaż główną aplikację
   return (
     <NavigationContainer>
       <Tab.Navigator
