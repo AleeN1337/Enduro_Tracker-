@@ -196,8 +196,8 @@ const ProfileScreen = () => {
             <Ionicons name="camera" size={16} color="white" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.username}>{user?.displayName || 'Użytkownik'}</Text>
-        <Text style={styles.email}>{user?.email || ''}</Text>
+        <Text style={styles.username}>{user?.displayName || "Użytkownik"}</Text>
+        <Text style={styles.email}>{user?.email || ""}</Text>
       </View>
 
       {/* Statystyki */}
@@ -250,27 +250,23 @@ const ProfileScreen = () => {
       <TouchableOpacity
         style={styles.logoutButton}
         onPress={() =>
-          Alert.alert(
-            "Wylogowanie",
-            "Czy na pewno chcesz się wylogować?",
-            [
-              {
-                text: "Anuluj",
-                style: "cancel",
+          Alert.alert("Wylogowanie", "Czy na pewno chcesz się wylogować?", [
+            {
+              text: "Anuluj",
+              style: "cancel",
+            },
+            {
+              text: "Wyloguj",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  await logout();
+                } catch (error) {
+                  Alert.alert("Błąd", "Nie udało się wylogować");
+                }
               },
-              {
-                text: "Wyloguj",
-                style: "destructive",
-                onPress: async () => {
-                  try {
-                    await logout();
-                  } catch (error) {
-                    Alert.alert("Błąd", "Nie udało się wylogować");
-                  }
-                },
-              },
-            ]
-          )
+            },
+          ])
         }
       >
         <Ionicons name="log-out-outline" size={20} color="#F44336" />

@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Konfiguracja Firebase - UWAGA: Należy zastąpić własnymi danymi z Firebase Console
 // Aby uzyskać te dane:
@@ -15,7 +15,7 @@ const firebaseConfig = {
   projectId: "TWÓJ_PROJECT_ID",
   storageBucket: "TWÓJ_PROJECT_ID.appspot.com",
   messagingSenderId: "TWÓJ_SENDER_ID",
-  appId: "TWOJA_APP_ID"
+  appId: "TWOJA_APP_ID",
 };
 
 // Inicjalizacja Firebase

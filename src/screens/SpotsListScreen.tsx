@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -47,16 +47,22 @@ const SpotsListScreen = () => {
   useEffect(() => {
     loadSpots();
     getUserLocation();
-    // Refresh spots every 2 seconds to sync with new additions
-    const interval = setInterval(loadSpots, 2000);
-    return () => clearInterval(interval);
-  }, []);
+    
+    // Nasłuchuj focusa ekranu aby odświeżyć listę
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadSpots();
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
 
-  const getUserLocation = async () => {
+  const getUserLocation = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
-        const currentLocation = await Location.getCurrentPositionAsync({});
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced, // Zbalansowana dokładność dla lepszej wydajności
+        });
         setUserLocation({
           latitude: currentLocation.coords.latitude,
           longitude: currentLocation.coords.longitude,
@@ -68,9 +74,9 @@ const SpotsListScreen = () => {
     } catch (error) {
       console.error("Error getting location:", error);
     }
-  };
+  }, []);
 
-  const openNavigation = (spot: EnduroSpot) => {
+  const openNavigation = useCallback((spot: EnduroSpot) => {
     if (!userLocation) {
       Alert.alert("Błąd", "Nie można ustalić twojej lokalizacji");
       return;
@@ -96,17 +102,17 @@ const SpotsListScreen = () => {
         },
       },
     ]);
-  };
+  }, [userLocation, navigationContext]);
 
-  const loadSpots = () => {
+  const loadSpots = useCallback(() => {
     // Filtruj tylko miejsca utworzone przez aktualnego użytkownika
     const userSpots = globalSpots.filter(
       (spot) => spot.createdBy === "current-user"
     );
     setSpots(userSpots);
-  };
+  }, []);
 
-  const handleDeleteSpot = (spot: EnduroSpot) => {
+  const handleDeleteSpot = useCallback((spot: EnduroSpot) => {
     Alert.alert(
       "Usuń miejscówkę",
       `Czy na pewno chcesz usunąć "${spot.name}"?`,
@@ -122,21 +128,18 @@ const SpotsListScreen = () => {
         },
       ]
     );
-  };
+  }, [loadSpots]);
 
-  const handleSpotPress = (spot: EnduroSpot) => {
+  const handleCommentsPress = useCallback((spot: EnduroSpot) => {
     (navigation as any).navigate("SpotDetails", { spotId: spot.id });
-  };
+  }, [navigation]);
 
-  const handleCommentsPress = (spot: EnduroSpot) => {
-    (navigation as any).navigate("SpotDetails", { spotId: spot.id });
-  };
-
-  const filteredSpots = spots.filter(
-    (spot) => filter === "all" || spot.difficulty === filter
+  const filteredSpots = useMemo(() => 
+    spots.filter((spot) => filter === "all" || spot.difficulty === filter),
+    [spots, filter]
   );
 
-  const getDifficultyColor = (difficulty: EnduroSpot["difficulty"]) => {
+  const getDifficultyColor = useCallback((difficulty: EnduroSpot["difficulty"]) => {
     switch (difficulty) {
       case "easy":
         return "#4CAF50";
@@ -149,9 +152,9 @@ const SpotsListScreen = () => {
       default:
         return "#757575";
     }
-  };
+  }, []);
 
-  const getDifficultyText = (difficulty: EnduroSpot["difficulty"]) => {
+  const getDifficultyText = useCallback((difficulty: EnduroSpot["difficulty"]) => {
     switch (difficulty) {
       case "easy":
         return "Łatwy";
@@ -164,9 +167,9 @@ const SpotsListScreen = () => {
       default:
         return "Nieznany";
     }
-  };
+  }, []);
 
-  const getCategoryIcon = (
+  const getCategoryIcon = useCallback((
     category: "climb" | "technical" | "jump" | "creek" | "rocks" | "mud"
   ) => {
     switch (category) {
@@ -185,9 +188,13 @@ const SpotsListScreen = () => {
       default:
         return "location";
     }
-  };
+  }, []);
 
-  const renderSpotItem = ({ item }: { item: EnduroSpot }) => (
+  const handleSpotPress = useCallback((item: EnduroSpot) => {
+    (navigation as any).navigate("SpotDetails", { spotId: item.id });
+  }, [navigation]);
+
+  const renderSpotItem = useCallback(({ item }: { item: EnduroSpot }) => (
     <TouchableOpacity
       style={styles.spotItem}
       onPress={() => handleSpotPress(item)}
@@ -266,9 +273,9 @@ const SpotsListScreen = () => {
         </View>
       </View>
     </TouchableOpacity>
-  );
+  ), [handleSpotPress, openNavigation, handleDeleteSpot, handleCommentsPress, getDifficultyColor, getDifficultyText, getCategoryIcon]);
 
-  const FilterButton = ({
+  const FilterButton = React.memo(({
     title,
     filterValue,
     isActive,
@@ -285,7 +292,7 @@ const SpotsListScreen = () => {
         {title}
       </Text>
     </TouchableOpacity>
-  );
+  ));
 
   return (
     <View style={styles.container}>

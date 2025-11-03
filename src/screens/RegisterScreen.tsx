@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,71 +10,77 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "../config/firebase";
+import { Ionicons } from "@expo/vector-icons";
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
 }
 
-const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+const RegisterScreen: React.FC<RegisterScreenProps> = ({
+  onNavigateToLogin,
+}) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Błąd', 'Wypełnij wszystkie pola');
+      Alert.alert("Błąd", "Wypełnij wszystkie pola");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Błąd', 'Hasła nie są identyczne');
+      Alert.alert("Błąd", "Hasła nie są identyczne");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Błąd', 'Hasło musi mieć co najmniej 6 znaków');
+      Alert.alert("Błąd", "Hasło musi mieć co najmniej 6 znaków");
       return;
     }
 
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       // Aktualizuj profil użytkownika z imieniem
       await updateProfile(userCredential.user, {
         displayName: name,
       });
 
-      Alert.alert('Sukces', 'Konto zostało utworzone!');
+      Alert.alert("Sukces", "Konto zostało utworzone!");
       // AuthContext zajmie się nawigacją
     } catch (error: any) {
-      console.error('Registration error:', error);
-      let errorMessage = 'Wystąpił błąd podczas rejestracji';
-      
+      console.error("Registration error:", error);
+      let errorMessage = "Wystąpił błąd podczas rejestracji";
+
       switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'Ten adres email jest już używany';
+        case "auth/email-already-in-use":
+          errorMessage = "Ten adres email jest już używany";
           break;
-        case 'auth/invalid-email':
-          errorMessage = 'Nieprawidłowy adres email';
+        case "auth/invalid-email":
+          errorMessage = "Nieprawidłowy adres email";
           break;
-        case 'auth/operation-not-allowed':
-          errorMessage = 'Rejestracja email/hasło nie jest włączona';
+        case "auth/operation-not-allowed":
+          errorMessage = "Rejestracja email/hasło nie jest włączona";
           break;
-        case 'auth/weak-password':
-          errorMessage = 'Hasło jest zbyt słabe';
+        case "auth/weak-password":
+          errorMessage = "Hasło jest zbyt słabe";
           break;
       }
-      
-      Alert.alert('Błąd rejestracji', errorMessage);
+
+      Alert.alert("Błąd rejestracji", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -82,7 +88,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView
@@ -97,7 +103,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Ionicons
+              name="person-outline"
+              size={20}
+              color="#888"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Imię"
@@ -110,7 +121,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </View>
 
           <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Ionicons
+              name="mail-outline"
+              size={20}
+              color="#888"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Email"
@@ -124,7 +140,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </View>
 
           <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color="#888"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Hasło (min. 6 znaków)"
@@ -139,7 +160,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               style={styles.eyeIcon}
             >
               <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
                 size={20}
                 color="#888"
               />
@@ -147,7 +168,12 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </View>
 
           <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color="#888"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Potwierdź hasło"
@@ -162,7 +188,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
               style={styles.eyeIcon}
             >
               <Ionicons
-                name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
                 size={20}
                 color="#888"
               />
@@ -170,7 +196,10 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
           </View>
 
           <TouchableOpacity
-            style={[styles.registerButton, loading && styles.registerButtonDisabled]}
+            style={[
+              styles.registerButton,
+              loading && styles.registerButtonDisabled,
+            ]}
             onPress={handleRegister}
             disabled={loading}
           >
@@ -196,49 +225,49 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: "#1a1a1a",
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
     marginTop: 20,
   },
   subtitle: {
     fontSize: 16,
-    color: '#888',
+    color: "#888",
     marginTop: 8,
   },
   form: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2a2a2a",
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: "#444",
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
     paddingVertical: 16,
   },
@@ -246,13 +275,13 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   registerButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
     elevation: 4,
-    shadowColor: '#FF6B35',
+    shadowColor: "#FF6B35",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -261,23 +290,23 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   registerButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 24,
   },
   loginText: {
-    color: '#888',
+    color: "#888",
     fontSize: 16,
   },
   loginLink: {
-    color: '#FF6B35',
+    color: "#FF6B35",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

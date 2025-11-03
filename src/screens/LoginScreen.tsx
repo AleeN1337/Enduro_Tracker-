@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,24 +10,24 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../config/firebase";
+import { Ionicons } from "@expo/vector-icons";
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Błąd', 'Wypełnij wszystkie pola');
+      Alert.alert("Błąd", "Wypełnij wszystkie pola");
       return;
     }
 
@@ -36,28 +36,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
       await signInWithEmailAndPassword(auth, email, password);
       // Użytkownik zalogowany - AuthContext zajmie się nawigacją
     } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = 'Wystąpił błąd podczas logowania';
-      
+      console.error("Login error:", error);
+      let errorMessage = "Wystąpił błąd podczas logowania";
+
       switch (error.code) {
-        case 'auth/invalid-email':
-          errorMessage = 'Nieprawidłowy adres email';
+        case "auth/invalid-email":
+          errorMessage = "Nieprawidłowy adres email";
           break;
-        case 'auth/user-disabled':
-          errorMessage = 'To konto zostało wyłączone';
+        case "auth/user-disabled":
+          errorMessage = "To konto zostało wyłączone";
           break;
-        case 'auth/user-not-found':
-          errorMessage = 'Nie znaleziono użytkownika';
+        case "auth/user-not-found":
+          errorMessage = "Nie znaleziono użytkownika";
           break;
-        case 'auth/wrong-password':
-          errorMessage = 'Nieprawidłowe hasło';
+        case "auth/wrong-password":
+          errorMessage = "Nieprawidłowe hasło";
           break;
-        case 'auth/invalid-credential':
-          errorMessage = 'Nieprawidłowy email lub hasło';
+        case "auth/invalid-credential":
+          errorMessage = "Nieprawidłowy email lub hasło";
           break;
       }
-      
-      Alert.alert('Błąd logowania', errorMessage);
+
+      Alert.alert("Błąd logowania", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView
@@ -80,7 +80,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Ionicons
+              name="mail-outline"
+              size={20}
+              color="#888"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Email"
@@ -94,7 +99,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
           </View>
 
           <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
+            <Ionicons
+              name="lock-closed-outline"
+              size={20}
+              color="#888"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Hasło"
@@ -109,7 +119,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
               style={styles.eyeIcon}
             >
               <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
                 size={20}
                 color="#888"
               />
@@ -143,49 +153,49 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: "#1a1a1a",
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: "bold",
+    color: "#fff",
     marginTop: 20,
   },
   subtitle: {
     fontSize: 16,
-    color: '#888',
+    color: "#888",
     marginTop: 8,
   },
   form: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2a2a2a',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2a2a2a",
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: "#444",
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
     paddingVertical: 16,
   },
@@ -193,13 +203,13 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   loginButton: {
-    backgroundColor: '#FF6B35',
+    backgroundColor: "#FF6B35",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
     elevation: 4,
-    shadowColor: '#FF6B35',
+    shadowColor: "#FF6B35",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -208,23 +218,23 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   loginButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 24,
   },
   registerText: {
-    color: '#888',
+    color: "#888",
     fontSize: 16,
   },
   registerLink: {
-    color: '#FF6B35',
+    color: "#FF6B35",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

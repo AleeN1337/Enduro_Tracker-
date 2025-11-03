@@ -1,7 +1,7 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { auth } from '../config/firebase';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import React, { createContext, useState, useEffect, useContext } from "react";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { auth } from "../config/firebase";
+import { ActivityIndicator, View, StyleSheet } from "react-native";
 
 interface AuthContextType {
   user: User | null;
@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       throw error;
     }
   };
@@ -72,8 +72,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1a1a1a",
   },
 });

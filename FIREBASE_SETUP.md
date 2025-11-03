@@ -26,7 +26,7 @@ const firebaseConfig = {
   projectId: "twoj-projekt",
   storageBucket: "twoj-projekt.appspot.com",
   messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef123456"
+  appId: "1:123456789012:web:abcdef123456",
 };
 ```
 
@@ -38,12 +38,12 @@ Otwórz plik `src/config/firebase.ts` i zastąp wartości placeholderów swoimi 
 
 ```typescript
 const firebaseConfig = {
-  apiKey: "TWÓJ_API_KEY",              // <- Wklej apiKey
-  authDomain: "TWÓJ_PROJECT_ID.firebaseapp.com",  // <- Wklej authDomain
-  projectId: "TWÓJ_PROJECT_ID",        // <- Wklej projectId
-  storageBucket: "TWÓJ_PROJECT_ID.appspot.com",  // <- Wklej storageBucket
+  apiKey: "TWÓJ_API_KEY", // <- Wklej apiKey
+  authDomain: "TWÓJ_PROJECT_ID.firebaseapp.com", // <- Wklej authDomain
+  projectId: "TWÓJ_PROJECT_ID", // <- Wklej projectId
+  storageBucket: "TWÓJ_PROJECT_ID.appspot.com", // <- Wklej storageBucket
   messagingSenderId: "TWÓJ_SENDER_ID", // <- Wklej messagingSenderId
-  appId: "TWOJA_APP_ID"                // <- Wklej appId
+  appId: "TWOJA_APP_ID", // <- Wklej appId
 };
 ```
 
@@ -100,13 +100,17 @@ Jeśli chcesz przechowywać dane użytkowników w bazie danych:
 ## Rozwiązywanie problemów
 
 ### Problem: "Firebase: Error (auth/configuration-not-found)"
+
 **Rozwiązanie:** Sprawdź czy poprawnie skopiowałeś dane konfiguracyjne do `src/config/firebase.ts`
 
 ### Problem: "Firebase: Error (auth/operation-not-allowed)"
+
 **Rozwiązanie:** Włącz Email/Password authentication w Firebase Console (Krok 5)
 
 ### Problem: Aplikacja nie uruchamia się
+
 **Rozwiązanie:** Upewnij się, że zainstalowałeś wszystkie zależności:
+
 ```bash
 npm install
 ```
