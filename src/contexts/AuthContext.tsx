@@ -1,6 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { auth } from "../config/firebase";
+import type { User } from "firebase/auth";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 
 interface AuthContextType {
@@ -32,19 +31,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Nasłuchuj zmiany stanu uwierzytelnienia
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    // Dynamically import Firebase at runtime to avoid initializing it during
+    // the very first app bundle evaluation. This defers heavy work until after
+    // the first render, improving perceived startup time.
+    let unsubscribe: any = () => {};
+    let mounted = true;
 
-    // Cleanup subscription
-    return () => unsubscribe();
+    (async () => {
+      try {
+        const fb = await import("../config/firebase");
+        const authModule = await import("firebase/auth");
+
+        // Subscribe to auth state changes
+        unsubscribe = authModule.onAuthStateChanged(
+          fb.auth,
+          (user: User | null) => {
+            if (!mounted) return;
+            setUser(user);
+            setLoading(false);
+          }
+        );
+      } catch (error) {
+        console.error("Auth init error:", error);
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      try {
+        if (unsubscribe) unsubscribe();
+      } catch (e) {
+        /* ignore */
+      }
+    };
   }, []);
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      const fb = await import("../config/firebase");
+      const authModule = await import("firebase/auth");
+      await authModule.signOut(fb.auth);
     } catch (error) {
       console.error("Logout error:", error);
       throw error;

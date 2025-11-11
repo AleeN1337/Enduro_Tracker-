@@ -47,12 +47,12 @@ const SpotsListScreen = () => {
   useEffect(() => {
     loadSpots();
     getUserLocation();
-    
+
     // Nasłuchuj focusa ekranu aby odświeżyć listę
-    const unsubscribe = navigation.addListener('focus', () => {
+    const unsubscribe = navigation.addListener("focus", () => {
       loadSpots();
     });
-    
+
     return unsubscribe;
   }, [navigation]);
 
@@ -76,33 +76,36 @@ const SpotsListScreen = () => {
     }
   }, []);
 
-  const openNavigation = useCallback((spot: EnduroSpot) => {
-    if (!userLocation) {
-      Alert.alert("Błąd", "Nie można ustalić twojej lokalizacji");
-      return;
-    }
+  const openNavigation = useCallback(
+    (spot: EnduroSpot) => {
+      if (!userLocation) {
+        Alert.alert("Błąd", "Nie można ustalić twojej lokalizacji");
+        return;
+      }
 
-    // Pokaż opcje nawigacji
-    Alert.alert("Wybierz typ nawigacji", `Nawiguj do: ${spot.name}`, [
-      { text: "Anuluj", style: "cancel" },
-      {
-        text: "🗺️ Trasa na mapie",
-        onPress: () => {
-          navigationContext.setNavigationTarget(spot);
-          navigationContext.setShouldShowNavigation(true);
-          navigationContext.setNavigationMode("map");
+      // Pokaż opcje nawigacji
+      Alert.alert("Wybierz typ nawigacji", `Nawiguj do: ${spot.name}`, [
+        { text: "Anuluj", style: "cancel" },
+        {
+          text: "🗺️ Trasa na mapie",
+          onPress: () => {
+            navigationContext.setNavigationTarget(spot);
+            navigationContext.setShouldShowNavigation(true);
+            navigationContext.setNavigationMode("map");
+          },
         },
-      },
-      {
-        text: "🧭 Nawigacja GPS",
-        onPress: () => {
-          navigationContext.setNavigationTarget(spot);
-          navigationContext.setIsGPSNavigating(true);
-          navigationContext.setNavigationMode("gps");
+        {
+          text: "🧭 Nawigacja GPS",
+          onPress: () => {
+            navigationContext.setNavigationTarget(spot);
+            navigationContext.setIsGPSNavigating(true);
+            navigationContext.setNavigationMode("gps");
+          },
         },
-      },
-    ]);
-  }, [userLocation, navigationContext]);
+      ]);
+    },
+    [userLocation, navigationContext]
+  );
 
   const loadSpots = useCallback(() => {
     // Filtruj tylko miejsca utworzone przez aktualnego użytkownika
@@ -112,187 +115,217 @@ const SpotsListScreen = () => {
     setSpots(userSpots);
   }, []);
 
-  const handleDeleteSpot = useCallback((spot: EnduroSpot) => {
-    Alert.alert(
-      "Usuń miejscówkę",
-      `Czy na pewno chcesz usunąć "${spot.name}"?`,
-      [
-        { text: "Anuluj", style: "cancel" },
-        {
-          text: "Usuń",
-          style: "destructive",
-          onPress: () => {
-            removeSpot(spot.id);
-            loadSpots();
+  const handleDeleteSpot = useCallback(
+    (spot: EnduroSpot) => {
+      Alert.alert(
+        "Usuń miejscówkę",
+        `Czy na pewno chcesz usunąć "${spot.name}"?`,
+        [
+          { text: "Anuluj", style: "cancel" },
+          {
+            text: "Usuń",
+            style: "destructive",
+            onPress: () => {
+              removeSpot(spot.id);
+              loadSpots();
+            },
           },
-        },
-      ]
-    );
-  }, [loadSpots]);
+        ]
+      );
+    },
+    [loadSpots]
+  );
 
-  const handleCommentsPress = useCallback((spot: EnduroSpot) => {
-    (navigation as any).navigate("SpotDetails", { spotId: spot.id });
-  }, [navigation]);
+  const handleCommentsPress = useCallback(
+    (spot: EnduroSpot) => {
+      (navigation as any).navigate("SpotDetails", { spotId: spot.id });
+    },
+    [navigation]
+  );
 
-  const filteredSpots = useMemo(() => 
-    spots.filter((spot) => filter === "all" || spot.difficulty === filter),
+  const filteredSpots = useMemo(
+    () =>
+      spots.filter((spot) => filter === "all" || spot.difficulty === filter),
     [spots, filter]
   );
 
-  const getDifficultyColor = useCallback((difficulty: EnduroSpot["difficulty"]) => {
-    switch (difficulty) {
-      case "easy":
-        return "#4CAF50";
-      case "moderate":
-        return "#FF9800";
-      case "hard":
-        return "#F44336";
-      case "extreme":
-        return "#9C27B0";
-      default:
-        return "#757575";
-    }
-  }, []);
+  const getDifficultyColor = useCallback(
+    (difficulty: EnduroSpot["difficulty"]) => {
+      switch (difficulty) {
+        case "easy":
+          return "#4CAF50";
+        case "moderate":
+          return "#FF9800";
+        case "hard":
+          return "#F44336";
+        case "extreme":
+          return "#9C27B0";
+        default:
+          return "#757575";
+      }
+    },
+    []
+  );
 
-  const getDifficultyText = useCallback((difficulty: EnduroSpot["difficulty"]) => {
-    switch (difficulty) {
-      case "easy":
-        return "Łatwy";
-      case "moderate":
-        return "Średni";
-      case "hard":
-        return "Trudny";
-      case "extreme":
-        return "Ekstremalny";
-      default:
-        return "Nieznany";
-    }
-  }, []);
+  const getDifficultyText = useCallback(
+    (difficulty: EnduroSpot["difficulty"]) => {
+      switch (difficulty) {
+        case "easy":
+          return "Łatwy";
+        case "moderate":
+          return "Średni";
+        case "hard":
+          return "Trudny";
+        case "extreme":
+          return "Ekstremalny";
+        default:
+          return "Nieznany";
+      }
+    },
+    []
+  );
 
-  const getCategoryIcon = useCallback((
-    category: "climb" | "technical" | "jump" | "creek" | "rocks" | "mud"
-  ) => {
-    switch (category) {
-      case "climb":
-        return "trending-up";
-      case "technical":
-        return "construct";
-      case "jump":
-        return "arrow-up";
-      case "creek":
-        return "water";
-      case "rocks":
-        return "diamond";
-      case "mud":
-        return "cloudy";
-      default:
-        return "location";
-    }
-  }, []);
+  const getCategoryIcon = useCallback(
+    (category: "climb" | "technical" | "jump" | "creek" | "rocks" | "mud") => {
+      switch (category) {
+        case "climb":
+          return "trending-up";
+        case "technical":
+          return "construct";
+        case "jump":
+          return "arrow-up";
+        case "creek":
+          return "water";
+        case "rocks":
+          return "diamond";
+        case "mud":
+          return "cloudy";
+        default:
+          return "location";
+      }
+    },
+    []
+  );
 
-  const handleSpotPress = useCallback((item: EnduroSpot) => {
-    (navigation as any).navigate("SpotDetails", { spotId: item.id });
-  }, [navigation]);
+  const handleSpotPress = useCallback(
+    (item: EnduroSpot) => {
+      (navigation as any).navigate("SpotDetails", { spotId: item.id });
+    },
+    [navigation]
+  );
 
-  const renderSpotItem = useCallback(({ item }: { item: EnduroSpot }) => (
-    <TouchableOpacity
-      style={styles.spotItem}
-      onPress={() => handleSpotPress(item)}
-    >
-      <View style={styles.spotHeader}>
-        <View style={styles.spotTitleRow}>
-          <Ionicons
-            name={getCategoryIcon(item.categories[0] || "climb")}
-            size={20}
-            color="#FF6B35"
-          />
-          <Text style={styles.spotName}>{item.name}</Text>
-        </View>
-        <View style={styles.spotActions}>
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={16} color="#FFD700" />
-            <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.commentsButton}
-            onPress={() => handleCommentsPress(item)}
-          >
-            <Ionicons name="chatbubble" size={16} color="#3498db" />
-            <Text style={styles.commentsCount}>
-              {item.comments?.length || 0}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteSpot(item)}
-          >
-            <Ionicons name="trash" size={18} color="#F44336" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <Text style={styles.spotDescription} numberOfLines={2}>
-        {item.description}
-      </Text>
-
-      {/* Pokaż zdjęcia jeśli są */}
-      {item.images && item.images.length > 0 && (
-        <ScrollView
-          horizontal
-          style={styles.imagesContainer}
-          showsHorizontalScrollIndicator={false}
-        >
-          {item.images.map((imageUri, index) => (
-            <Image
-              key={index}
-              source={{ uri: imageUri }}
-              style={styles.spotImage}
+  const renderSpotItem = useCallback(
+    ({ item }: { item: EnduroSpot }) => (
+      <TouchableOpacity
+        style={styles.spotItem}
+        onPress={() => handleSpotPress(item)}
+      >
+        <View style={styles.spotHeader}>
+          <View style={styles.spotTitleRow}>
+            <Ionicons
+              name={getCategoryIcon(item.categories[0] || "climb")}
+              size={20}
+              color="#FF6B35"
             />
-          ))}
-        </ScrollView>
-      )}
-
-      <View style={styles.spotFooter}>
-        <View style={styles.tagsContainer}>
-          {item.tags.slice(0, 2).map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
+            <Text style={styles.spotName}>{item.name}</Text>
+          </View>
+          <View style={styles.spotActions}>
+            <View style={styles.ratingContainer}>
+              <Ionicons name="star" size={16} color="#FFD700" />
+              <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
             </View>
-          ))}
+            <TouchableOpacity
+              style={styles.commentsButton}
+              onPress={() => handleCommentsPress(item)}
+            >
+              <Ionicons name="chatbubble" size={16} color="#3498db" />
+              <Text style={styles.commentsCount}>
+                {item.comments?.length || 0}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteSpot(item)}
+            >
+              <Ionicons name="trash" size={18} color="#F44336" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View
-          style={[
-            styles.difficultyBadge,
-            { backgroundColor: getDifficultyColor(item.difficulty) },
-          ]}
-        >
-          <Text style={styles.difficultyText}>
-            {getDifficultyText(item.difficulty)}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  ), [handleSpotPress, openNavigation, handleDeleteSpot, handleCommentsPress, getDifficultyColor, getDifficultyText, getCategoryIcon]);
+        <Text style={styles.spotDescription} numberOfLines={2}>
+          {item.description}
+        </Text>
 
-  const FilterButton = React.memo(({
-    title,
-    filterValue,
-    isActive,
-  }: {
-    title: string;
-    filterValue: typeof filter;
-    isActive: boolean;
-  }) => (
-    <TouchableOpacity
-      style={[styles.filterButton, isActive && styles.activeFilterButton]}
-      onPress={() => setFilter(filterValue)}
-    >
-      <Text style={[styles.filterText, isActive && styles.activeFilterText]}>
-        {title}
-      </Text>
-    </TouchableOpacity>
-  ));
+        {/* Pokaż zdjęcia jeśli są */}
+        {item.images && item.images.length > 0 && (
+          <ScrollView
+            horizontal
+            style={styles.imagesContainer}
+            showsHorizontalScrollIndicator={false}
+          >
+            {item.images.map((imageUri, index) => (
+              <Image
+                key={index}
+                source={{ uri: imageUri }}
+                style={styles.spotImage}
+              />
+            ))}
+          </ScrollView>
+        )}
+
+        <View style={styles.spotFooter}>
+          <View style={styles.tagsContainer}>
+            {item.tags.slice(0, 2).map((tag, index) => (
+              <View key={index} style={styles.tag}>
+                <Text style={styles.tagText}>#{tag}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View
+            style={[
+              styles.difficultyBadge,
+              { backgroundColor: getDifficultyColor(item.difficulty) },
+            ]}
+          >
+            <Text style={styles.difficultyText}>
+              {getDifficultyText(item.difficulty)}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    ),
+    [
+      handleSpotPress,
+      openNavigation,
+      handleDeleteSpot,
+      handleCommentsPress,
+      getDifficultyColor,
+      getDifficultyText,
+      getCategoryIcon,
+    ]
+  );
+
+  const FilterButton = React.memo(
+    ({
+      title,
+      filterValue,
+      isActive,
+    }: {
+      title: string;
+      filterValue: typeof filter;
+      isActive: boolean;
+    }) => (
+      <TouchableOpacity
+        style={[styles.filterButton, isActive && styles.activeFilterButton]}
+        onPress={() => setFilter(filterValue)}
+      >
+        <Text style={[styles.filterText, isActive && styles.activeFilterText]}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    )
+  );
 
   return (
     <View style={styles.container}>
